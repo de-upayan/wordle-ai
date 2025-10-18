@@ -150,11 +150,6 @@ function App() {
         </div>
 
         <div className="flex flex-col gap-8 items-center">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold mb-2">
-              Wordle AI Solver
-            </h1>
-          </div>
 
           <div
             className={`flex gap-6 items-stretch ${

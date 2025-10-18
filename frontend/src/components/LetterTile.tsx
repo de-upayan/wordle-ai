@@ -25,7 +25,7 @@ export function LetterTile({
   return (
     <button
       className={`w-16 h-16 flex items-center justify-center
-        text-2xl font-bold rounded-md border-2
+        text-5xl font-black border-2
         transition-all uppercase
         ${colorClasses[color]}
         ${isSuggestion ? 'text-teal-500 opacity-50' : ''}

@@ -65,9 +65,21 @@ export function GameBoard({
             const letter = displayWord[tileIndex] || ''
             const color = (guess?.feedback[tileIndex] ||
               'empty') as TileColor
+
+            // Show suggestion when on current row, not typing,
+            // and suggestion exists
             const isSuggestion =
               !!(isCurrentRow &&
               !isTyping &&
+              suggestion &&
+              tileIndex < suggestion.length)
+
+            // Show suggestion as overlay when typing and
+            // user hasn't typed at this position yet
+            const showSuggestionOverlay =
+              !!(isCurrentRow &&
+              isTyping &&
+              !letter &&
               suggestion &&
               tileIndex < suggestion.length)
 
@@ -75,12 +87,14 @@ export function GameBoard({
               <div key={tileIndex}>
                 <LetterTile
                   letter={
-                    isSuggestion
+                    isSuggestion || showSuggestionOverlay
                       ? suggestion[tileIndex]
                       : letter
                   }
                   color={color}
-                  isSuggestion={isSuggestion}
+                  isSuggestion={
+                    isSuggestion || showSuggestionOverlay
+                  }
                   isActive={isCurrentRow}
                   onClick={
                     guess

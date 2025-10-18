@@ -1,9 +1,4 @@
-interface Suggestion {
-  word: string
-  depth: number
-  score: number
-  remainingPossibilities: number
-}
+import { Suggestion } from '../types/index'
 
 interface SuggestionPanelProps {
   suggestion?: Suggestion

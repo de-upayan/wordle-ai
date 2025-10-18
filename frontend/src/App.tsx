@@ -3,21 +3,19 @@ import { GameBoard } from './components/GameBoard'
 import { ColorPicker } from './components/ColorPicker'
 import { SuggestionPanel } from './components/SuggestionPanel'
 import { TileColor } from './components/LetterTile'
+import { useGameState } from './hooks/useGameState'
+import { createLogger } from './utils/logger'
 
-interface Guess {
-  word: string
-  colors: TileColor[]
-}
+const logger = createLogger('App')
 
 function App() {
-  const [guesses, setGuesses] = useState<Guess[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const [typedWord, setTypedWord] = useState('')
-  const [currentRowIndex, setCurrentRowIndex] = useState(0)
-  const [selectedColor, setSelectedColor] = useState<string | null>(
+  const [selectedColor, setSelectedColor] = useState<TileColor | null>(
     null,
   )
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const { gameState, addGuess, setFeedback } = useGameState()
 
   useEffect(() => {
     if (isDarkMode) {
@@ -27,14 +25,33 @@ function App() {
     }
   }, [isDarkMode])
 
-  const handleGuessSubmit = (word: string) => {
-    console.log('Guess submitted:', word)
-    const newGuess = {
-      word: word.toUpperCase(),
-      colors: Array(5).fill('empty'),
+  // Log game state changes
+  useEffect(() => {
+    logger.debug('Game state updated', {
+      guessCount: gameState.guessCount,
+      currentRowIndex: gameState.currentRowIndex,
+      guesses: gameState.guesses.map((g) => ({
+        word: g.word,
+        feedback: g.feedback,
+      })),
+    })
+
+    // Log constraints
+    if (gameState.guesses.length > 0) {
+      logger.info('Constraints updated', {
+        greenLetters: gameState.constraints.greenLetters,
+        yellowLetters: gameState.constraints.yellowLetters,
+        grayLetters: Array.from(
+          gameState.constraints.grayLetters
+        ),
+      })
     }
-    setGuesses([...guesses, newGuess])
-    setCurrentRowIndex(currentRowIndex + 1)
+  }, [gameState])
+
+  const handleGuessSubmit = (word: string) => {
+    logger.info('Guess submitted', { word })
+    const feedback: TileColor[] = Array(5).fill('empty')
+    addGuess(word, feedback)
     setTypedWord('')
     setIsTyping(false)
   }
@@ -45,18 +62,43 @@ function App() {
   }
 
   const handleTileClick = (rowIndex: number, tileIndex: number) => {
-    console.log(`Tile clicked: row ${rowIndex}, tile ${tileIndex}`)
-    if (selectedColor && guesses[rowIndex]) {
-      const updatedGuesses = [...guesses]
-      updatedGuesses[rowIndex].colors[tileIndex] =
-        selectedColor as TileColor
-      setGuesses(updatedGuesses)
+    logger.debug('Tile clicked', { rowIndex, tileIndex })
+
+    if (!selectedColor) {
+      logger.warn('No color selected', {
+        selectedColor,
+      })
+      return
     }
+
+    const guess = gameState.guesses[rowIndex]
+    if (!guess) {
+      logger.warn('No guess at row', { rowIndex })
+      return
+    }
+
+    logger.info('Painting tile', {
+      rowIndex,
+      tileIndex,
+      letter: guess.word[tileIndex],
+      color: selectedColor,
+    })
+
+    const updatedFeedback = [
+      ...gameState.guesses[rowIndex].feedback,
+    ]
+    updatedFeedback[tileIndex] = selectedColor
+    setFeedback(rowIndex, updatedFeedback)
+
+    logger.debug('Updated feedback', {
+      rowIndex,
+      feedback: updatedFeedback,
+    })
   }
 
-  const handleColorSelect = (color: string) => {
+  const handleColorSelect = (color: TileColor) => {
     setSelectedColor(color)
-    console.log('Color selected:', color)
+    logger.info('Color selected', { color })
   }
 
   const mockSuggestion = {
@@ -99,11 +141,6 @@ function App() {
             <h1 className="text-4xl font-bold mb-2">
               Wordle AI Solver
             </h1>
-            <p className={`text-lg ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              Test UI - Phase 1 Components
-            </p>
           </div>
 
           <div
@@ -115,8 +152,8 @@ function App() {
             }`}
           >
             <GameBoard
-              guesses={guesses}
-              currentRowIndex={currentRowIndex}
+              guesses={gameState.guesses}
+              currentRowIndex={gameState.currentRowIndex}
               suggestion={mockSuggestion.word}
               isTyping={isTyping}
               typedWord={typedWord}
@@ -128,7 +165,9 @@ function App() {
 
           <ColorPicker
             onColorSelect={handleColorSelect}
-            isVisible={!isTyping && currentRowIndex < 6}
+            isVisible={
+              !isTyping && gameState.currentRowIndex < 6
+            }
             isDarkMode={isDarkMode}
           />
 

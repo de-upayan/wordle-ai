@@ -15,9 +15,14 @@ func Main() {
 		"/api/v1/suggest/stream",
 		handlers.SuggestStream,
 	)
+	http.HandleFunc(
+		"/api/v1/suggest/cancel",
+		handlers.CancelStream,
+	)
 
 	// Health check endpoint
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/health", func(w http.ResponseWriter,
+		r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})

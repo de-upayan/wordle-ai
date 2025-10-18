@@ -40,39 +40,28 @@ export interface GameState {
 }
 
 /**
- * SSE event for a suggestion update
- */
-export interface SuggestionEvent {
-  type: 'suggestion'
-  word: string
-  depth: number
-  score: number
-  remainingPossibilities: number
-}
-
-/**
- * SSE event indicating search is complete
- */
-export interface DoneEvent {
-  type: 'done'
-  finalWord: string
-  finalDepth: number
-  finalScore: number
-  finalRemainingPossibilities: number
-}
-
-/**
- * Union type for SSE events
- */
-export type SSEEvent = SuggestionEvent | DoneEvent
-
-/**
  * Single suggestion with score
  */
 export interface SuggestionItem {
   word: string
   score: number
 }
+
+/**
+ * SSE event with top 5 suggestions at current depth
+ */
+export interface SuggestionsEvent {
+  streamId: string
+  suggestions: SuggestionItem[]
+  topSuggestion: SuggestionItem
+  depth: number
+  done: boolean
+}
+
+/**
+ * Union type for SSE events (currently only suggestions)
+ */
+export type SSEEvent = SuggestionsEvent
 
 /**
  * Suggestion data displayed to the user

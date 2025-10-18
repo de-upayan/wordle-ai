@@ -69,16 +69,24 @@ type SuggestRequest struct {
 	MaxDepth    int           `json:"maxDepth"`
 }
 
-// SuggestionEvent represents a single suggestion event in the SSE stream
-type SuggestionEvent struct {
-	Word      string  `json:"word"`
-	Depth     int     `json:"depth"`
-	Score     float64 `json:"score"`
-	Remaining int     `json:"remaining"`
+// CancelRequest represents a request to cancel an ongoing
+// suggestion stream
+type CancelRequest struct {
+	StreamID string `json:"streamId"`
 }
 
-// DoneEvent represents the final event in the SSE stream
-type DoneEvent struct {
-	FinalWord string `json:"finalWord"`
-	Depth     int    `json:"depth"`
+// SuggestionItem represents a single suggestion with score
+type SuggestionItem struct {
+	Word  string  `json:"word"`
+	Score float64 `json:"score"`
+}
+
+// SuggestionsEvent represents an event with top 5
+// suggestions at current depth in the SSE stream
+type SuggestionsEvent struct {
+	StreamID      string           `json:"streamId"`
+	Suggestions   []SuggestionItem `json:"suggestions"`
+	TopSuggestion SuggestionItem   `json:"topSuggestion"`
+	Depth         int              `json:"depth"`
+	Done          bool             `json:"done"`
 }

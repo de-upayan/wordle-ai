@@ -93,21 +93,18 @@ func TestSuggestStreamSSEFormat(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqData)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/suggest/stream", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/suggest/stream",
+		bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
 	SuggestStream(w, req)
 
 	response := w.Body.String()
 
-	// Check for suggestion events
-	if !strings.Contains(response, "event: suggestion") {
-		t.Error("Response missing 'event: suggestion'")
-	}
-
-	// Check for done event
-	if !strings.Contains(response, "event: done") {
-		t.Error("Response missing 'event: done'")
+	// Check for suggestions events
+	if !strings.Contains(response, "event: suggestions") {
+		t.Error("Response missing 'event: suggestions'")
 	}
 
 	// Check for data lines
@@ -142,7 +139,9 @@ func TestSuggestStreamEventContent(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqData)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/suggest/stream", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/suggest/stream",
+		bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
 	SuggestStream(w, req)
@@ -150,17 +149,64 @@ func TestSuggestStreamEventContent(t *testing.T) {
 	response := w.Body.String()
 
 	// Check for expected test word
-	if !strings.Contains(response, "BLIND") {
-		t.Error("Response missing expected test word 'BLIND'")
+	if !strings.Contains(response, "STARE") {
+		t.Error("Response missing expected test word 'STARE'")
 	}
 
 	// Check for score
-	if !strings.Contains(response, "0.85") {
-		t.Error("Response missing expected score '0.85'")
+	if !strings.Contains(response, "8.5") {
+		t.Error("Response missing expected score '8.5'")
 	}
 
-	// Check for remaining count
-	if !strings.Contains(response, "42") {
-		t.Error("Response missing expected remaining count '42'")
+	// Check for suggestions event
+	if !strings.Contains(response, "event: suggestions") {
+		t.Error("Response missing 'event: suggestions'")
+	}
+
+	// Check for depth
+	if !strings.Contains(response, "\"depth\":1") {
+		t.Error("Response missing depth 1")
+	}
+
+	// Check for streamId
+	if !strings.Contains(response, "\"streamId\":") {
+		t.Error("Response missing streamId")
+	}
+
+	// Check for done flag
+	if !strings.Contains(response, "\"done\":true") {
+		t.Error("Response missing done flag set to true")
+	}
+}
+
+func TestCancelStreamInvalidMethod(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet,
+		"/api/v1/suggest/cancel", nil)
+	w := httptest.NewRecorder()
+
+	CancelStream(w, req)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected status %d, got %d",
+			http.StatusMethodNotAllowed, w.Code)
+	}
+}
+
+func TestCancelStreamNotFound(t *testing.T) {
+	reqData := models.CancelRequest{
+		StreamID: "nonexistent-id",
+	}
+
+	body, _ := json.Marshal(reqData)
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/suggest/cancel",
+		bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	CancelStream(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("Expected status %d, got %d",
+			http.StatusNotFound, w.Code)
 	}
 }

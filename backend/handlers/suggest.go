@@ -5,9 +5,19 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/de-upayan/wordle-ai/backend/models"
+)
+
+// activeStreams tracks ongoing suggestion streams by ID
+// Maps streamID -> cancel channel
+var (
+	activeStreams = make(map[string]chan struct{})
+	streamsMutex  sync.RWMutex
 )
 
 // TODO(de-upayan): Load word lists (answers.txt, guesses.txt)
@@ -17,17 +27,36 @@ import (
 func SuggestStream(w http.ResponseWriter, r *http.Request) {
 	// Only accept POST requests with JSON body
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "Method not allowed",
+			http.StatusMethodNotAllowed)
 		return
 	}
 
 	// Parse request body
 	var req models.SuggestRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "Invalid request body",
+			http.StatusBadRequest)
 		log.Printf("Error decoding request: %v", err)
 		return
 	}
+
+	// Generate unique stream ID
+	streamID := uuid.New().String()
+
+	// Create cancel channel for this stream
+	cancelChan := make(chan struct{})
+	streamsMutex.Lock()
+	activeStreams[streamID] = cancelChan
+	streamsMutex.Unlock()
+
+	// Cleanup on exit
+	defer func() {
+		streamsMutex.Lock()
+		delete(activeStreams, streamID)
+		streamsMutex.Unlock()
+		close(cancelChan)
+	}()
 
 	// Set SSE headers
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -38,35 +67,70 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 	// Get flusher for streaming
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		http.Error(w, "Streaming not supported",
+			http.StatusInternalServerError)
 		return
 	}
 
 	// TODO(de-upayan): Replace hardcoded test data with actual AI
 	// engine that performs iterative deepening search
-	testWords := []string{"BLIND", "ROUND", "POUND"}
-	testScores := []float64{0.85, 0.92, 0.95}
-	testRemaining := []int{42, 38, 35}
+	allWords := []string{
+		"STARE", "SLATE", "CRANE", "TRACE", "RAISE",
+		"STONE", "STORE", "SHORE", "SHARE", "SPARE",
+	}
+	allScores := []float64{
+		8.5, 8.3, 8.1, 7.9, 7.7,
+		7.5, 7.3, 7.1, 6.9, 6.7,
+	}
 
 	// TODO(de-upayan): Implement word filtering based on
 	// constraints (greenLetters, yellowLetters, grayLetters)
-	for depth := 1; depth <= req.MaxDepth && depth <= len(testWords); depth++ {
-		event := models.SuggestionEvent{
-			Word:      testWords[depth-1],
-			Depth:     depth,
-			Score:     testScores[depth-1],
-			Remaining: testRemaining[depth-1],
+
+	// Stream top 5 suggestions at each depth
+	for depth := 1; depth <= req.MaxDepth; depth++ {
+		// Check if stream was cancelled
+		select {
+		case <-cancelChan:
+			log.Printf("Stream %s cancelled", streamID)
+			return
+		default:
+		}
+
+		// Get top 5 suggestions for current depth
+		topN := 5
+		if len(allWords) < topN {
+			topN = len(allWords)
+		}
+
+		suggestions := make([]models.SuggestionItem, 0)
+		for i := 0; i < topN; i++ {
+			suggestions = append(suggestions,
+				models.SuggestionItem{
+					Word:  allWords[i],
+					Score: allScores[i],
+				})
+		}
+
+		suggestionsEvent := models.SuggestionsEvent{
+			StreamID:    streamID,
+			Suggestions: suggestions,
+			TopSuggestion: models.SuggestionItem{
+				Word:  allWords[0],
+				Score: allScores[0],
+			},
+			Depth: depth,
+			Done:  depth == req.MaxDepth,
 		}
 
 		// Marshal event data
-		data, err := json.Marshal(event)
+		data, err := json.Marshal(suggestionsEvent)
 		if err != nil {
 			log.Printf("Error marshaling event: %v", err)
 			continue
 		}
 
 		// Send SSE event
-		fmt.Fprintf(w, "event: suggestion\n")
+		fmt.Fprintf(w, "event: suggestions\n")
 		fmt.Fprintf(w, "data: %s\n\n", string(data))
 		flusher.Flush()
 
@@ -74,24 +138,46 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 		// engine is integrated
 		time.Sleep(100 * time.Millisecond)
 	}
+}
 
-	// Send done event
-	finalDepth := req.MaxDepth
-	if finalDepth > len(testWords) {
-		finalDepth = len(testWords)
-	}
-	doneEvent := models.DoneEvent{
-		FinalWord: testWords[finalDepth-1],
-		Depth:     finalDepth,
-	}
-
-	doneData, err := json.Marshal(doneEvent)
-	if err != nil {
-		log.Printf("Error marshaling done event: %v", err)
+// CancelStream handles POST /api/v1/suggest/cancel
+// Cancels an ongoing suggestion stream by ID
+func CancelStream(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed",
+			http.StatusMethodNotAllowed)
 		return
 	}
 
-	fmt.Fprintf(w, "event: done\n")
-	fmt.Fprintf(w, "data: %s\n\n", string(doneData))
-	flusher.Flush()
+	var req models.CancelRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body",
+			http.StatusBadRequest)
+		log.Printf("Error decoding cancel request: %v", err)
+		return
+	}
+
+	streamsMutex.RLock()
+	cancelChan, exists := activeStreams[req.StreamID]
+	streamsMutex.RUnlock()
+
+	if !exists {
+		http.Error(w, "Stream not found",
+			http.StatusNotFound)
+		return
+	}
+
+	// Signal cancellation
+	select {
+	case cancelChan <- struct{}{}:
+		log.Printf("Cancelled stream %s", req.StreamID)
+	default:
+		// Stream already finished
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "cancelled",
+	})
 }

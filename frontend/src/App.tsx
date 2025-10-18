@@ -161,11 +161,11 @@ function App() {
           >
             {/* Game Board */}
             <div
-              className={`p-6 rounded-lg shadow-md w-fit flex
+              className={`p-6 rounded-lg w-fit flex
                 justify-center ${
                 isDarkMode
                   ? 'bg-gray-800'
-                  : 'bg-white'
+                  : 'bg-gray-50'
               }`}
             >
               <GameBoard
@@ -180,24 +180,27 @@ function App() {
               />
             </div>
 
-            {/* Color Panel */}
-            {!isTyping && gameState.currentRowIndex < 6 && (
-              <ColorPanel
-                onColorSelect={handleColorSelect}
-                isPaintMode={isPaintMode}
-                onPaintModeToggle={handlePaintModeToggle}
-                selectedColor={selectedColor}
+            {/* Right Panel: Color Panel and Suggestion Panel */}
+            <div className="flex flex-col gap-4">
+              {/* Color Panel */}
+              {gameState.currentRowIndex < 6 && (
+                <ColorPanel
+                  onColorSelect={handleColorSelect}
+                  isPaintMode={isPaintMode}
+                  onPaintModeToggle={handlePaintModeToggle}
+                  selectedColor={selectedColor}
+                  isDarkMode={isDarkMode}
+                />
+              )}
+
+              {/* Suggestion Panel */}
+              <SuggestionPanel
+                suggestion={mockSuggestion}
+                isLoading={false}
                 isDarkMode={isDarkMode}
               />
-            )}
+            </div>
           </div>
-
-          <SuggestionPanel
-            suggestion={mockSuggestion}
-            isLoading={false}
-            isTyping={isTyping}
-            isDarkMode={isDarkMode}
-          />
 
           <div className={`p-4 rounded-md w-full text-sm ${
             isDarkMode

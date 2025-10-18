@@ -51,9 +51,9 @@ export function ColorPanel({
       <button
         onClick={handlePaintModeToggle}
         className={`flex items-center justify-center
-          w-12 h-12 rounded-lg transition-all
+          w-40 h-12 rounded-lg transition-all
           ${isPaintMode
-            ? 'bg-blue-500 text-white shadow-lg scale-105'
+            ? 'bg-blue-500 text-white shadow-lg'
             : isDarkMode
               ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
@@ -64,7 +64,7 @@ export function ColorPanel({
       </button>
 
       {/* Color Selection Squares */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-row gap-2">
         {colors.map(({ color, bg }) => (
           <button
             key={color}

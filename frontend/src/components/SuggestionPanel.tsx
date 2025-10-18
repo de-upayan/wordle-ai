@@ -4,7 +4,6 @@ interface SuggestionPanelProps {
   suggestion?: Suggestion
   isLoading?: boolean
   error?: string
-  isTyping?: boolean
   isDarkMode?: boolean
 }
 
@@ -12,11 +11,8 @@ export function SuggestionPanel({
   suggestion,
   isLoading = false,
   error,
-  isTyping = false,
   isDarkMode = false,
 }: SuggestionPanelProps) {
-  if (isTyping && !isLoading) return null
-
   return (
     <div className={`mt-6 p-4 rounded-lg border shadow-sm ${
       isDarkMode

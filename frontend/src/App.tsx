@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { GameBoard } from './components/GameBoard'
 import { SuggestionPanel } from './components/SuggestionPanel'
+import { InstructionPanel } from './components/InstructionPanel'
 import { TileColor } from './components/LetterTile'
 import { useGameState } from './hooks/useGameState'
 import { createLogger } from './utils/logger'
@@ -194,6 +195,22 @@ function App() {
           onMaxDepthChange={setMaxDepth}
           boardHeight={boardHeight}
         />
+      </div>
+
+      {/* Instruction Panel */}
+      <InstructionPanel
+        gameStatus={gameState.gameStatus}
+        guessCount={gameState.guessCount}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* Footer */}
+      <div
+        className={`absolute bottom-4 text-xs ${
+          isDarkMode ? 'text-gray-500' : 'text-gray-400'
+        }`}
+      >
+        © 2025 de-upayan (Upayan De)
       </div>
     </div>
   )

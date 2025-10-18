@@ -85,21 +85,7 @@ export function ColorPanel({
         ))}
       </div>
 
-      {/* Status Text */}
-      {isPaintMode && (
-        <div className={`text-xs font-semibold text-center ${
-          isDarkMode
-            ? 'text-gray-300'
-            : 'text-gray-600'
-        }`}>
-          {selectedColor && (
-            <p>
-              {selectedColor.charAt(0).toUpperCase() +
-                selectedColor.slice(1)}
-            </p>
-          )}
-        </div>
-      )}
+
     </div>
   )
 }

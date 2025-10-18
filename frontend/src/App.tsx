@@ -123,20 +123,36 @@ function App() {
       <div className="absolute top-8 right-8">
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
-          className={`relative inline-flex h-8 w-14 items-center
+          className={`relative inline-flex h-10 w-20 items-center
             rounded-full transition-colors duration-300 ${
               isDarkMode
-                ? 'bg-blue-600'
+                ? 'bg-gray-700'
                 : 'bg-gray-300'
             }`}
+          title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           <span
-            className={`inline-block h-6 w-6 transform
-              rounded-full bg-white transition-transform
-              duration-300 ${
-                isDarkMode ? 'translate-x-7' : 'translate-x-1'
+            className={`absolute inline-flex h-8 w-8 items-center
+              justify-center transform rounded-full bg-white
+              transition-all duration-300 text-2xl text-black ${
+                isDarkMode ? 'translate-x-11' : 'translate-x-1'
               }`}
-          />
+          >
+            <span
+              className={`transition-opacity duration-300 ${
+                isDarkMode ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              ☀︎
+            </span>
+            <span
+              className={`absolute transition-opacity duration-300 ${
+                isDarkMode ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              ⏾
+            </span>
+          </span>
         </button>
       </div>
 

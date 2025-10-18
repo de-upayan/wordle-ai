@@ -111,10 +111,14 @@ function App() {
   }
 
   const mockSuggestion = {
-    word: 'STARE',
-    depth: 2,
-    score: 8.5,
-    remainingPossibilities: 1200,
+    suggestions: [
+      { word: 'STARE', score: 8.5 },
+      { word: 'SLATE', score: 8.3 },
+      { word: 'CRANE', score: 8.1 },
+      { word: 'TRACE', score: 7.9 },
+      { word: 'RAISE', score: 7.7 },
+    ],
+    topSuggestion: { word: 'STARE', score: 8.5 },
   }
 
   return (
@@ -153,7 +157,7 @@ function App() {
           </div>
 
           <div
-            className={`flex gap-6 items-start ${
+            className={`flex gap-6 items-stretch ${
               isDarkMode
                 ? 'bg-gray-900'
                 : 'bg-white'
@@ -171,7 +175,9 @@ function App() {
               <GameBoard
                 guesses={gameState.guesses}
                 currentRowIndex={gameState.currentRowIndex}
-                suggestion={mockSuggestion.word}
+                suggestion={
+                  mockSuggestion.topSuggestion.word
+                }
                 isTyping={isTyping}
                 typedWord={typedWord}
                 onGuessSubmit={handleGuessSubmit}
@@ -181,7 +187,7 @@ function App() {
             </div>
 
             {/* Right Panel: Color Panel and Suggestion Panel */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 flex-1">
               {/* Color Panel */}
               {gameState.currentRowIndex < 6 && (
                 <ColorPanel

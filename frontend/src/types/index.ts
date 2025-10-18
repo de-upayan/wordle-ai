@@ -67,12 +67,19 @@ export interface DoneEvent {
 export type SSEEvent = SuggestionEvent | DoneEvent
 
 /**
+ * Single suggestion with score
+ */
+export interface SuggestionItem {
+  word: string
+  score: number
+}
+
+/**
  * Suggestion data displayed to the user
+ * Contains multiple suggestions sorted by score (descending)
  */
 export interface Suggestion {
-  word: string
-  depth: number
-  score: number
-  remainingPossibilities: number
+  suggestions: SuggestionItem[]
+  topSuggestion: SuggestionItem
 }
 

@@ -3,15 +3,17 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/de-upayan/wordle-ai/backend/logger"
 	"github.com/de-upayan/wordle-ai/backend/models"
 )
+
+var log = logger.New()
 
 // activeStreams tracks ongoing suggestion streams by ID
 // Maps streamID -> cancel channel
@@ -25,8 +27,16 @@ var (
 // SuggestStream handles POST /api/v1/suggest/stream
 // Returns Server-Sent Events with progressive suggestions
 func SuggestStream(w http.ResponseWriter, r *http.Request) {
+	log.Info("SuggestStream handler called",
+		"method", r.Method,
+		"path", r.RequestURI,
+	)
+
 	// Only accept POST requests with JSON body
 	if r.Method != http.MethodPost {
+		log.Warn("Invalid method for SuggestStream",
+			"method", r.Method,
+		)
 		http.Error(w, "Method not allowed",
 			http.StatusMethodNotAllowed)
 		return
@@ -35,11 +45,18 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
 	var req models.SuggestRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Error("Error decoding request",
+			"error", err,
+		)
 		http.Error(w, "Invalid request body",
 			http.StatusBadRequest)
-		log.Printf("Error decoding request: %v", err)
 		return
 	}
+
+	log.Info("Request decoded successfully",
+		"guessNumber", req.GuessNumber,
+		"maxDepth", req.MaxDepth,
+	)
 
 	// Generate unique stream ID
 	streamID := uuid.New().String()
@@ -91,7 +108,9 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 		// Check if stream was cancelled
 		select {
 		case <-cancelChan:
-			log.Printf("Stream %s cancelled", streamID)
+			log.Info("Stream cancelled",
+				"streamID", streamID,
+			)
 			return
 		default:
 		}
@@ -125,9 +144,16 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 		// Marshal event data
 		data, err := json.Marshal(suggestionsEvent)
 		if err != nil {
-			log.Printf("Error marshaling event: %v", err)
+			log.Error("Error marshaling event",
+				"error", err,
+			)
 			continue
 		}
+
+		log.Debug("Sending suggestions event",
+			"depth", depth,
+			"count", len(suggestions),
+		)
 
 		// Send SSE event
 		fmt.Fprintf(w, "event: suggestions\n")
@@ -143,7 +169,15 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 // CancelStream handles POST /api/v1/suggest/cancel
 // Cancels an ongoing suggestion stream by ID
 func CancelStream(w http.ResponseWriter, r *http.Request) {
+	log.Info("CancelStream handler called",
+		"method", r.Method,
+		"path", r.RequestURI,
+	)
+
 	if r.Method != http.MethodPost {
+		log.Warn("Invalid method for CancelStream",
+			"method", r.Method,
+		)
 		http.Error(w, "Method not allowed",
 			http.StatusMethodNotAllowed)
 		return
@@ -151,11 +185,17 @@ func CancelStream(w http.ResponseWriter, r *http.Request) {
 
 	var req models.CancelRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Error("Error decoding cancel request",
+			"error", err,
+		)
 		http.Error(w, "Invalid request body",
 			http.StatusBadRequest)
-		log.Printf("Error decoding cancel request: %v", err)
 		return
 	}
+
+	log.Info("Cancel request decoded",
+		"streamID", req.StreamID,
+	)
 
 	streamsMutex.RLock()
 	cancelChan, exists := activeStreams[req.StreamID]
@@ -170,9 +210,14 @@ func CancelStream(w http.ResponseWriter, r *http.Request) {
 	// Signal cancellation
 	select {
 	case cancelChan <- struct{}{}:
-		log.Printf("Cancelled stream %s", req.StreamID)
+		log.Info("Stream cancelled successfully",
+			"streamID", req.StreamID,
+		)
 	default:
 		// Stream already finished
+		log.Debug("Stream already finished",
+			"streamID", req.StreamID,
+		)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

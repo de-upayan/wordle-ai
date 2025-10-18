@@ -225,25 +225,6 @@ export function SuggestionPanel({
               ),
             )}
           </div>
-
-          {isLoading && (
-            <div className="flex gap-2 items-center mt-2">
-              <div
-                className="animate-spin h-4 w-4 border-2
-                  border-blue-500 border-t-transparent
-                  rounded-full"
-              ></div>
-              <p
-                className={`text-xs ${
-                  isDarkMode
-                    ? 'text-gray-400'
-                    : 'text-gray-500'
-                }`}
-              >
-                Searching deeper...
-              </p>
-            </div>
-          )}
         </div>
       )}
     </div>

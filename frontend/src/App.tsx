@@ -5,6 +5,11 @@ import { InstructionPanel } from './components/InstructionPanel'
 import { TileColor } from './components/LetterTile'
 import { useGameState } from './hooks/useGameState'
 import { createLogger } from './utils/logger'
+import { wordleAIClient } from './services/api'
+import {
+  SuggestionsEvent,
+  Suggestion,
+} from './types/index'
 
 const logger = createLogger('App')
 
@@ -15,7 +20,16 @@ function App() {
   const [maxDepth, setMaxDepth] = useState(10)
   const [currentDepth, setCurrentDepth] = useState(0)
   const [boardHeight, setBoardHeight] = useState(0)
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(
+    null
+  )
+  const [isLoadingSuggestions, setIsLoadingSuggestions] =
+    useState(false)
+  const [suggestionError, setSuggestionError] = useState<
+    string | null
+  >(null)
   const boardRef = useRef<HTMLDivElement>(null)
+  const streamIdRef = useRef<string | null>(null)
   const { gameState, addGuess, setFeedback } = useGameState()
 
   useEffect(() => {
@@ -31,6 +45,87 @@ function App() {
       document.documentElement.classList.remove('dark')
     }
   }, [isDarkMode])
+
+  // Fetch suggestions when game state changes
+  useEffect(() => {
+    setIsLoadingSuggestions(true)
+    setSuggestionError(null)
+
+    logger.info('Fetching suggestions', {
+      guessCount: gameState.guessCount,
+      maxDepth,
+    })
+
+    // Cancel previous stream if one exists
+    if (streamIdRef.current) {
+      logger.info('Cancelling previous stream', {
+        streamId: streamIdRef.current,
+      })
+      wordleAIClient.cancelStream(streamIdRef.current)
+        .catch((err) => {
+          logger.warn('Failed to cancel previous stream', {
+            error: String(err),
+          })
+        })
+    }
+
+    // Start new stream
+    wordleAIClient
+      .streamSuggestions(
+        gameState.guessCount,
+        gameState.constraints,
+        maxDepth,
+        (event: SuggestionsEvent) => {
+          logger.debug('Received suggestions', {
+            depth: event.depth,
+            count: event.suggestions.length,
+          })
+          setCurrentDepth(event.depth)
+          setSuggestion({
+            suggestions: event.suggestions,
+            topSuggestion: event.topSuggestion,
+          })
+        },
+        (error: Error) => {
+          logger.error('Suggestion stream error', {
+            error: error.message,
+          })
+          setSuggestionError(error.message)
+          setIsLoadingSuggestions(false)
+        },
+        () => {
+          logger.info('Suggestion stream completed')
+          setIsLoadingSuggestions(false)
+        }
+      )
+      .then((streamId) => {
+        logger.info('Stream started successfully', {
+          streamId,
+        })
+        streamIdRef.current = streamId
+      })
+      .catch((err) => {
+        logger.error('Failed to start stream', {
+          error: String(err),
+        })
+        setIsLoadingSuggestions(false)
+      })
+
+    return () => {
+      // Cleanup: cancel stream if component unmounts
+      if (streamIdRef.current) {
+        logger.info('Cleaning up stream on unmount', {
+          streamId: streamIdRef.current,
+        })
+        wordleAIClient.cancelStream(streamIdRef.current)
+          .catch((err) => {
+            logger.warn('Failed to cancel stream on unmount', {
+              error: String(err),
+            })
+          })
+      }
+    }
+  }, [gameState.guessCount, gameState.constraints, maxDepth])
 
   // Log game state changes
   useEffect(() => {
@@ -112,15 +207,10 @@ function App() {
     })
   }
 
-  const mockSuggestion = {
-    suggestions: [
-      { word: 'STARE', score: 8.5 },
-      { word: 'SLATE', score: 8.3 },
-      { word: 'CRANE', score: 8.1 },
-      { word: 'TRACE', score: 7.9 },
-      { word: 'RAISE', score: 7.7 },
-    ],
-    topSuggestion: { word: 'STARE', score: 8.5 },
+  // Default suggestion when no data is available
+  const defaultSuggestion: Suggestion = {
+    suggestions: [],
+    topSuggestion: { word: '', score: 0 },
   }
 
   return (
@@ -174,7 +264,7 @@ function App() {
             guesses={gameState.guesses}
             currentRowIndex={gameState.currentRowIndex}
             suggestion={
-              mockSuggestion.topSuggestion.word
+              suggestion?.topSuggestion.word || ''
             }
             isTyping={isTyping}
             typedWord={typedWord}
@@ -187,8 +277,10 @@ function App() {
 
         {/* Suggestion Panel */}
         <SuggestionPanel
-          suggestion={mockSuggestion}
-          isLoading={false}
+          suggestion={
+            suggestion || defaultSuggestion
+          }
+          isLoading={isLoadingSuggestions}
           isDarkMode={isDarkMode}
           maxDepth={maxDepth}
           currentDepth={currentDepth}

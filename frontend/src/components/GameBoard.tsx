@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { LetterTile } from './LetterTile'
+import { LetterTile, TileColor } from './LetterTile'
 import { Guess } from '../types/index'
 
 interface GameBoardProps {
@@ -63,20 +63,16 @@ export function GameBoard({
           .fill(null)
           .map((_, tileIndex) => {
             const letter = displayWord[tileIndex] || ''
-            const color = guess?.feedback[tileIndex] || 'empty'
+            const color = (guess?.feedback[tileIndex] ||
+              'empty') as TileColor
             const isSuggestion =
-              isCurrentRow &&
+              !!(isCurrentRow &&
               !isTyping &&
               suggestion &&
-              tileIndex < suggestion.length
+              tileIndex < suggestion.length)
 
             return (
-              <div
-                key={tileIndex}
-                className={`transition-opacity ${
-                  isSuggestion ? 'opacity-40' : 'opacity-100'
-                }`}
-              >
+              <div key={tileIndex}>
                 <LetterTile
                   letter={
                     isSuggestion
@@ -84,6 +80,7 @@ export function GameBoard({
                       : letter
                   }
                   color={color}
+                  isSuggestion={isSuggestion}
                   isActive={isCurrentRow}
                   onClick={
                     guess

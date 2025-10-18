@@ -5,6 +5,7 @@ interface LetterTileProps {
   color: TileColor
   onClick?: () => void
   isActive?: boolean
+  isSuggestion?: boolean
 }
 
 const colorClasses: Record<TileColor, string> = {
@@ -19,6 +20,7 @@ export function LetterTile({
   color,
   onClick,
   isActive = false,
+  isSuggestion = false,
 }: LetterTileProps) {
   return (
     <button
@@ -26,9 +28,10 @@ export function LetterTile({
         text-2xl font-bold rounded-md border-2
         transition-all uppercase
         ${colorClasses[color]}
+        ${isSuggestion ? 'text-teal-500 opacity-50' : ''}
         ${isActive ? 'border-blue-500' : 'border-gray-300'}
         ${onClick ? 'cursor-pointer hover:scale-105 hover:shadow-md' : 'cursor-default'}
-        ${letter === '' && color === 'empty' ? 'opacity-50' : 'opacity-100'}`}
+        ${letter === '' && color === 'empty' && !isSuggestion ? 'opacity-50' : ''}`}
       onClick={onClick}
     >
       {letter}

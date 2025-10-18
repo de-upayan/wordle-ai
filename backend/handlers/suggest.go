@@ -91,13 +91,43 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 
 	// TODO(de-upayan): Replace hardcoded test data with actual AI
 	// engine that performs iterative deepening search
-	allWords := []string{
-		"STARE", "SLATE", "CRANE", "TRACE", "RAISE",
-		"STONE", "STORE", "SHORE", "SHARE", "SPARE",
-	}
-	allScores := []float64{
-		8.5, 8.3, 8.1, 7.9, 7.7,
-		7.5, 7.3, 7.1, 6.9, 6.7,
+	// Suggestions improve as depth increases
+	suggestionsByDepth := map[int][]models.SuggestionItem{
+		1: {
+			{Word: "STARE", Score: 8.5},
+			{Word: "SLATE", Score: 8.3},
+			{Word: "CRANE", Score: 8.1},
+			{Word: "TRACE", Score: 7.9},
+			{Word: "RAISE", Score: 7.7},
+		},
+		2: {
+			{Word: "STARE", Score: 8.7},
+			{Word: "SLATE", Score: 8.5},
+			{Word: "CRATE", Score: 8.3},
+			{Word: "TRADE", Score: 8.1},
+			{Word: "RAISE", Score: 7.9},
+		},
+		3: {
+			{Word: "STARE", Score: 8.9},
+			{Word: "SLATE", Score: 8.7},
+			{Word: "CRATE", Score: 8.5},
+			{Word: "TRADE", Score: 8.3},
+			{Word: "SPARE", Score: 8.1},
+		},
+		4: {
+			{Word: "STARE", Score: 9.1},
+			{Word: "SLATE", Score: 8.9},
+			{Word: "CRATE", Score: 8.7},
+			{Word: "TRADE", Score: 8.5},
+			{Word: "SPARE", Score: 8.3},
+		},
+		5: {
+			{Word: "STARE", Score: 9.3},
+			{Word: "SLATE", Score: 9.1},
+			{Word: "CRATE", Score: 8.9},
+			{Word: "TRADE", Score: 8.7},
+			{Word: "SPARE", Score: 8.5},
+		},
 	}
 
 	// TODO(de-upayan): Implement word filtering based on
@@ -115,30 +145,35 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 		default:
 		}
 
-		// Get top 5 suggestions for current depth
-		topN := 5
-		if len(allWords) < topN {
-			topN = len(allWords)
-		}
-
-		suggestions := make([]models.SuggestionItem, 0)
-		for i := 0; i < topN; i++ {
-			suggestions = append(suggestions,
-				models.SuggestionItem{
-					Word:  allWords[i],
-					Score: allScores[i],
-				})
+		// Get suggestions for current depth
+		// Use depth-specific suggestions if available,
+		// otherwise use depth 5 suggestions
+		var suggestions []models.SuggestionItem
+		if sugg, ok := suggestionsByDepth[depth]; ok {
+			suggestions = sugg
+		} else {
+			// For depths > 5, use the depth 5 suggestions
+			// with slightly improved scores
+			baseSugg := suggestionsByDepth[5]
+			suggestions = make(
+				[]models.SuggestionItem,
+				len(baseSugg),
+			)
+			for i, item := range baseSugg {
+				suggestions[i] = models.SuggestionItem{
+					Word: item.Word,
+					Score: item.Score +
+						float64(depth-5)*0.1,
+				}
+			}
 		}
 
 		suggestionsEvent := models.SuggestionsEvent{
-			StreamID:    streamID,
-			Suggestions: suggestions,
-			TopSuggestion: models.SuggestionItem{
-				Word:  allWords[0],
-				Score: allScores[0],
-			},
-			Depth: depth,
-			Done:  depth == req.MaxDepth,
+			StreamID:      streamID,
+			Suggestions:   suggestions,
+			TopSuggestion: suggestions[0],
+			Depth:         depth,
+			Done:          depth == req.MaxDepth,
 		}
 
 		// Marshal event data

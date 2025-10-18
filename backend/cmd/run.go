@@ -5,6 +5,7 @@ import (
 
 	"github.com/de-upayan/wordle-ai/backend/handlers"
 	"github.com/de-upayan/wordle-ai/backend/logger"
+	"github.com/de-upayan/wordle-ai/backend/strategies"
 )
 
 var log = logger.New()
@@ -47,10 +48,15 @@ func corsMiddleware(next http.Handler) http.Handler {
 func Main() {
 	mux := http.NewServeMux()
 
+	// Initialize solving strategy
+	strategy := strategies.NewTestStrategy()
+
 	// Register handlers
 	mux.HandleFunc(
 		"/api/v1/suggest/stream",
-		handlers.SuggestStream,
+		func(w http.ResponseWriter, r *http.Request) {
+			handlers.SuggestStream(w, r, strategy)
+		},
 	)
 	mux.HandleFunc(
 		"/api/v1/suggest/cancel",

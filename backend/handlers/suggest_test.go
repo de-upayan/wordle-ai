@@ -9,13 +9,15 @@ import (
 	"testing"
 
 	"github.com/de-upayan/wordle-ai/backend/models"
+	"github.com/de-upayan/wordle-ai/backend/strategies"
 )
 
 func TestSuggestStreamInvalidMethod(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/suggest/stream", nil)
 	w := httptest.NewRecorder()
+	strategy := strategies.NewTestStrategy()
 
-	SuggestStream(w, req)
+	SuggestStream(w, req, strategy)
 
 	if w.Code != http.StatusMethodNotAllowed {
 		t.Errorf("Expected status %d, got %d", http.StatusMethodNotAllowed, w.Code)
@@ -26,8 +28,9 @@ func TestSuggestStreamInvalidJSON(t *testing.T) {
 	body := strings.NewReader("invalid json")
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/suggest/stream", body)
 	w := httptest.NewRecorder()
+	strategy := strategies.NewTestStrategy()
 
-	SuggestStream(w, req)
+	SuggestStream(w, req, strategy)
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("Expected status %d, got %d", http.StatusBadRequest, w.Code)
@@ -60,8 +63,9 @@ func TestSuggestStreamValidRequest(t *testing.T) {
 	body, _ := json.Marshal(reqData)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/suggest/stream", bytes.NewReader(body))
 	w := httptest.NewRecorder()
+	strategy := strategies.NewTestStrategy()
 
-	SuggestStream(w, req)
+	SuggestStream(w, req, strategy)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
@@ -97,8 +101,9 @@ func TestSuggestStreamSSEFormat(t *testing.T) {
 		"/api/v1/suggest/stream",
 		bytes.NewReader(body))
 	w := httptest.NewRecorder()
+	strategy := strategies.NewTestStrategy()
 
-	SuggestStream(w, req)
+	SuggestStream(w, req, strategy)
 
 	response := w.Body.String()
 
@@ -143,8 +148,9 @@ func TestSuggestStreamEventContent(t *testing.T) {
 		"/api/v1/suggest/stream",
 		bytes.NewReader(body))
 	w := httptest.NewRecorder()
+	strategy := strategies.NewTestStrategy()
 
-	SuggestStream(w, req)
+	SuggestStream(w, req, strategy)
 
 	response := w.Body.String()
 

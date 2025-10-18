@@ -1,16 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/de-upayan/wordle-ai/backend/logger"
 	"github.com/de-upayan/wordle-ai/backend/models"
+	"github.com/de-upayan/wordle-ai/backend/strategies"
 )
 
 var log = logger.New()
@@ -26,7 +27,11 @@ var (
 // at startup and cache them for performance
 // SuggestStream handles POST /api/v1/suggest/stream
 // Returns Server-Sent Events with progressive suggestions
-func SuggestStream(w http.ResponseWriter, r *http.Request) {
+func SuggestStream(
+	w http.ResponseWriter,
+	r *http.Request,
+	strategy strategies.SolvingStrategy,
+) {
 	log.Info("SuggestStream handler called",
 		"method", r.Method,
 		"path", r.RequestURI,
@@ -89,91 +94,37 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(de-upayan): Replace hardcoded test data with actual AI
-	// engine that performs iterative deepening search
-	// Suggestions improve as depth increases
-	suggestionsByDepth := map[int][]models.SuggestionItem{
-		1: {
-			{Word: "STARE", Score: 8.5},
-			{Word: "SLATE", Score: 8.3},
-			{Word: "CRANE", Score: 8.1},
-			{Word: "TRACE", Score: 7.9},
-			{Word: "RAISE", Score: 7.7},
-		},
-		2: {
-			{Word: "STARE", Score: 8.7},
-			{Word: "SLATE", Score: 8.5},
-			{Word: "CRATE", Score: 8.3},
-			{Word: "TRADE", Score: 8.1},
-			{Word: "RAISE", Score: 7.9},
-		},
-		3: {
-			{Word: "STARE", Score: 8.9},
-			{Word: "SLATE", Score: 8.7},
-			{Word: "CRATE", Score: 8.5},
-			{Word: "TRADE", Score: 8.3},
-			{Word: "SPARE", Score: 8.1},
-		},
-		4: {
-			{Word: "STARE", Score: 9.1},
-			{Word: "SLATE", Score: 8.9},
-			{Word: "CRATE", Score: 8.7},
-			{Word: "TRADE", Score: 8.5},
-			{Word: "SPARE", Score: 8.3},
-		},
-		5: {
-			{Word: "STARE", Score: 9.3},
-			{Word: "SLATE", Score: 9.1},
-			{Word: "CRATE", Score: 8.9},
-			{Word: "TRADE", Score: 8.7},
-			{Word: "SPARE", Score: 8.5},
-		},
-	}
-
 	// TODO(de-upayan): Implement word filtering based on
 	// constraints (greenLetters, yellowLetters, grayLetters)
 
-	// Stream top 5 suggestions at each depth
-	for depth := 1; depth <= req.MaxDepth; depth++ {
-		// Check if stream was cancelled
-		select {
-		case <-cancelChan:
-			log.Info("Stream cancelled",
-				"streamID", streamID,
-			)
-			return
-		default:
-		}
+	// Create game state from request
+	gameState := models.GameState{
+		GuessNumber: req.GuessNumber,
+		Constraints: req.Constraints,
+	}
 
-		// Get suggestions for current depth
-		// Use depth-specific suggestions if available,
-		// otherwise use depth 5 suggestions
-		var suggestions []models.SuggestionItem
-		if sugg, ok := suggestionsByDepth[depth]; ok {
-			suggestions = sugg
-		} else {
-			// For depths > 5, use the depth 5 suggestions
-			// with slightly improved scores
-			baseSugg := suggestionsByDepth[5]
-			suggestions = make(
-				[]models.SuggestionItem,
-				len(baseSugg),
-			)
-			for i, item := range baseSugg {
-				suggestions[i] = models.SuggestionItem{
-					Word: item.Word,
-					Score: item.Score +
-						float64(depth-5)*0.1,
-				}
-			}
-		}
+	// Create context that can be cancelled
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
+	// Monitor for cancellation
+	go func() {
+		<-cancelChan
+		cancel()
+	}()
+
+	// Define callback for strategy to send suggestions
+	callback := func(
+		suggestions []models.SuggestionItem,
+		depth int,
+		done bool,
+	) bool {
 		suggestionsEvent := models.SuggestionsEvent{
 			StreamID:      streamID,
 			Suggestions:   suggestions,
 			TopSuggestion: suggestions[0],
 			Depth:         depth,
-			Done:          depth == req.MaxDepth,
+			Done:          done,
 		}
 
 		// Marshal event data
@@ -182,7 +133,7 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 			log.Error("Error marshaling event",
 				"error", err,
 			)
-			continue
+			return true
 		}
 
 		log.Debug("Sending suggestions event",
@@ -195,9 +146,19 @@ func SuggestStream(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "data: %s\n\n", string(data))
 		flusher.Flush()
 
-		// TODO(de-upayan): Remove simulated delay once real AI
-		// engine is integrated
-		time.Sleep(100 * time.Millisecond)
+		return true
+	}
+
+	// Run the strategy
+	if err := strategy.Solve(
+		ctx,
+		gameState,
+		req.MaxDepth,
+		callback,
+	); err != nil {
+		log.Debug("Strategy solve completed or cancelled",
+			"error", err,
+		)
 	}
 }
 

@@ -34,6 +34,16 @@ export function GameBoard({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const key = e.key.toUpperCase()
 
+    // Accept top suggestion with Shift+Enter
+    if (e.shiftKey && key === 'ENTER') {
+      e.preventDefault()
+      if (suggestion.length === 5) {
+        onGuessSubmit(suggestion)
+        onTypingChange(false, '')
+      }
+      return
+    }
+
     if (/^[A-Z]$/.test(key)) {
       e.preventDefault()
       if (typedWord.length < 5) {

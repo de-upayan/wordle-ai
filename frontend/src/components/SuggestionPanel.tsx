@@ -23,7 +23,7 @@ function SuggestionRow({
 }) {
   return (
     <div
-      className="p-3 flex items-center justify-between gap-3
+      className="py-3 flex items-center justify-between gap-3
         bg-transparent"
     >
       {/* Word with letter squares */}
@@ -94,7 +94,7 @@ export function SuggestionPanel({
   return (
     <div
       className={`p-4 flex flex-col
-        w-80 ${
+        w-64 ${
         isDarkMode
           ? 'bg-gray-800'
           : 'bg-gray-50'

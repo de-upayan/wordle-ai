@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { GameBoard } from './components/GameBoard'
-import { ColorPicker } from './components/ColorPicker'
+import { ColorPanel } from './components/ColorPanel'
 import { SuggestionPanel } from './components/SuggestionPanel'
 import { TileColor } from './components/LetterTile'
 import { useGameState } from './hooks/useGameState'
@@ -14,6 +14,7 @@ function App() {
   const [selectedColor, setSelectedColor] = useState<TileColor | null>(
     null,
   )
+  const [isPaintMode, setIsPaintMode] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const { gameState, addGuess, setFeedback } = useGameState()
 
@@ -101,6 +102,14 @@ function App() {
     logger.info('Color selected', { color })
   }
 
+  const handlePaintModeToggle = (enabled: boolean) => {
+    setIsPaintMode(enabled)
+    if (!enabled) {
+      setSelectedColor(null)
+    }
+    logger.info('Paint mode toggled', { enabled })
+  }
+
   const mockSuggestion = {
     word: 'STARE',
     depth: 2,
@@ -144,32 +153,44 @@ function App() {
           </div>
 
           <div
-            className={`p-6 rounded-lg shadow-md w-fit flex
-              justify-center ${
+            className={`flex gap-6 items-start ${
               isDarkMode
-                ? 'bg-gray-800'
+                ? 'bg-gray-900'
                 : 'bg-white'
             }`}
           >
-            <GameBoard
-              guesses={gameState.guesses}
-              currentRowIndex={gameState.currentRowIndex}
-              suggestion={mockSuggestion.word}
-              isTyping={isTyping}
-              typedWord={typedWord}
-              onGuessSubmit={handleGuessSubmit}
-              onTypingChange={handleTypingChange}
-              onTileClick={handleTileClick}
-            />
-          </div>
+            {/* Game Board */}
+            <div
+              className={`p-6 rounded-lg shadow-md w-fit flex
+                justify-center ${
+                isDarkMode
+                  ? 'bg-gray-800'
+                  : 'bg-white'
+              }`}
+            >
+              <GameBoard
+                guesses={gameState.guesses}
+                currentRowIndex={gameState.currentRowIndex}
+                suggestion={mockSuggestion.word}
+                isTyping={isTyping}
+                typedWord={typedWord}
+                onGuessSubmit={handleGuessSubmit}
+                onTypingChange={handleTypingChange}
+                onTileClick={handleTileClick}
+              />
+            </div>
 
-          <ColorPicker
-            onColorSelect={handleColorSelect}
-            isVisible={
-              !isTyping && gameState.currentRowIndex < 6
-            }
-            isDarkMode={isDarkMode}
-          />
+            {/* Color Panel */}
+            {!isTyping && gameState.currentRowIndex < 6 && (
+              <ColorPanel
+                onColorSelect={handleColorSelect}
+                isPaintMode={isPaintMode}
+                onPaintModeToggle={handlePaintModeToggle}
+                selectedColor={selectedColor}
+                isDarkMode={isDarkMode}
+              />
+            )}
+          </div>
 
           <SuggestionPanel
             suggestion={mockSuggestion}
@@ -187,7 +208,9 @@ function App() {
             <p>• Type letters (A-Z) to fill the current row</p>
             <p>• Press ENTER to submit your guess</p>
             <p>• Press BACKSPACE to delete a letter</p>
+            <p>• Click paint can button to enter paint mode</p>
             <p>• Select a color, then click tiles to paint them</p>
+            <p>• Click paint can button again to exit paint mode</p>
             <p>• Check console for click/submit events</p>
           </div>
         </div>

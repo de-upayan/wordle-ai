@@ -13,7 +13,7 @@ RUN if [ -f go.sum ]; then go mod download; fi
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -installsuffix cgo -o main .
 
 # Final stage
 FROM alpine:latest

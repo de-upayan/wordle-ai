@@ -12,22 +12,25 @@ The project includes:
 
 ## Running the Project
 
-### Option 1: Docker Development (Recommended for development)
+### Development (Recommended)
+
+Run the backend and frontend in separate terminals:
+
+**Terminal 1 - Backend:**
 ```bash
-make docker-up
+cd backend
+go run main.go
 ```
 
-This starts both services with Vite dev server for fast hot reload:
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+
+Then open http://localhost:5173 in your browser.
+
 - **Frontend**: http://localhost:5173 (with hot reload)
-- **Backend**: http://localhost:8080
-
-### Option 2: Docker Production
-```bash
-make docker-up-prod
-```
-
-This starts both services with optimized production build:
-- **Frontend**: http://localhost:3000 (production build)
 - **Backend**: http://localhost:8080
 
 ## Project Structure
@@ -42,12 +45,17 @@ wordle-ai/
 │   └── Dockerfile
 ├── frontend/          # React + Vite frontend
 │   ├── src/
-│   │   ├── App.jsx
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   ├── types/
+│   │   ├── App.tsx
 │   │   └── main.jsx
 │   ├── Dockerfile
 │   └── package.json
-├── docker-compose.yml # Orchestrates both services
-└── Makefile          # Convenient commands
+├── docker-compose.yml # For production deployment
+├── Makefile          # Development commands
+└── README.md         # This file
 ```
 
 ## API Integration
@@ -61,19 +69,18 @@ Environment variable: `VITE_API_BASE_URL`
 ## Useful Commands
 
 ```bash
-make docker-up        # Start dev environment (Vite dev server)
-make docker-up-prod   # Start production environment (optimized build)
-make docker-down      # Stop Docker services
-make test            # Run backend tests
+make dev              # Show development setup instructions
+make test             # Run backend tests
+make docker-down      # Stop Docker services (if running)
 ```
 
 ## Troubleshooting
 
 **Frontend won't connect to backend:**
-- Check `VITE_API_BASE_URL` environment variable
-- Ensure backend is running and healthy
-- Check Docker network: `docker network ls`
+- Ensure backend is running on http://localhost:8080
+- Check browser console for errors
+- Verify `VITE_API_BASE_URL` is set correctly
 
 **Port already in use:**
-- Backend: `lsof -i :8080`
-- Frontend: `lsof -i :3000`
+- Backend (8080): `lsof -i :8080`
+- Frontend (5173): `lsof -i :5173`

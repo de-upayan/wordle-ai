@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Suggestion, SuggestionItem } from '../types/index'
 
 interface SuggestionPanelProps {
@@ -5,6 +6,10 @@ interface SuggestionPanelProps {
   isLoading?: boolean
   error?: string
   isDarkMode?: boolean
+  maxDepth?: number
+  currentDepth?: number
+  onMaxDepthChange?: (depth: number) => void
+  boardHeight?: number
 }
 
 function SuggestionRow({
@@ -18,33 +23,33 @@ function SuggestionRow({
 }) {
   return (
     <div
-      className={`p-3 flex gap-3 items-center
-        justify-between ${
-        isTop
-          ? isDarkMode
-            ? 'bg-green-900'
-            : 'bg-green-100'
-          : isDarkMode
-            ? 'bg-gray-700'
-            : 'bg-white'
-      }`}
+      className="p-3 flex items-center justify-between gap-3
+        bg-transparent"
     >
+      {/* Word with letter squares */}
+      <div className="flex gap-1">
+        {item.word.split('').map((letter, idx) => (
+          <div
+            key={idx}
+            className={`w-8 h-8 flex items-center
+              justify-center border-2 font-bold text-2xl ${
+              isTop
+                ? isDarkMode
+                  ? 'bg-green-800 border-green-700 text-green-100'
+                  : 'bg-green-100 border-green-400 text-gray-900'
+                : isDarkMode
+                  ? 'bg-gray-600 border-gray-500 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+            }`}
+          >
+            {letter}
+          </div>
+        ))}
+      </div>
+
+      {/* Score */}
       <span
-        className={`font-bold px-3 py-1 rounded-full
-          text-sm ${
-          isTop
-            ? isDarkMode
-              ? 'bg-green-700 text-green-100'
-              : 'bg-green-200 text-green-900'
-            : isDarkMode
-              ? 'bg-blue-700 text-blue-100'
-              : 'bg-blue-100 text-blue-800'
-        }`}
-      >
-        {item.word}
-      </span>
-      <span
-        className={`text-sm font-semibold ${
+        className={`text-lg font-semibold whitespace-nowrap ${
           isTop
             ? isDarkMode
               ? 'text-green-100'
@@ -65,15 +70,117 @@ export function SuggestionPanel({
   isLoading = false,
   error,
   isDarkMode = false,
+  maxDepth = 10,
+  currentDepth = 0,
+  onMaxDepthChange,
+  boardHeight = 0,
 }: SuggestionPanelProps) {
+  const [localMaxDepth, setLocalMaxDepth] = useState(
+    maxDepth
+  )
+
+  const handleDepthChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newDepth = parseInt(e.target.value, 10)
+    setLocalMaxDepth(newDepth)
+    onMaxDepthChange?.(newDepth)
+  }
+
+  const depthPercentage = maxDepth > 0
+    ? (currentDepth / maxDepth) * 100
+    : 0
+
   return (
     <div
-      className={`p-4 rounded-lg flex flex-col flex-1 ${
+      className={`p-4 flex flex-col
+        w-80 ${
         isDarkMode
           ? 'bg-gray-800'
           : 'bg-gray-50'
       }`}
+      style={{
+        height: boardHeight > 0 ? `${boardHeight}px` : 'auto',
+      }}
     >
+      {/* Max Depth Slider */}
+      <div className="mb-2">
+        <div className="flex justify-between items-center
+          mb-1">
+          <label
+            className={`text-xs font-semibold ${
+              isDarkMode
+                ? 'text-gray-300'
+                : 'text-gray-700'
+            }`}
+          >
+            Max Depth
+          </label>
+          <span
+            className={`text-xs font-bold ${
+              isDarkMode
+                ? 'text-blue-400'
+                : 'text-blue-600'
+            }`}
+          >
+            {localMaxDepth}
+          </span>
+        </div>
+        <input
+          type="range"
+          min="1"
+          max="20"
+          value={localMaxDepth}
+          onChange={handleDepthChange}
+          className="w-full h-2 rounded-lg appearance-none
+            cursor-pointer"
+          style={{
+            background: `linear-gradient(to right,
+              #3b82f6 0%,
+              #3b82f6 ${(localMaxDepth / 20) * 100}%,
+              ${isDarkMode ? '#374151' : '#d1d5db'}
+              ${(localMaxDepth / 20) * 100}%,
+              ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`,
+          }}
+        />
+      </div>
+
+      {/* Current Depth Progress Bar */}
+      <div className="mb-4">
+        <div className="flex justify-between items-center
+          mb-1">
+          <label
+            className={`text-xs font-semibold ${
+              isDarkMode
+                ? 'text-gray-300'
+                : 'text-gray-700'
+            }`}
+          >
+            Current Depth
+          </label>
+          <span
+            className={`text-xs font-bold ${
+              isDarkMode
+                ? 'text-green-400'
+                : 'text-green-600'
+            }`}
+          >
+            {currentDepth} / {maxDepth}
+          </span>
+        </div>
+        <div
+          className={`w-full h-2 rounded-full overflow-hidden
+            mt-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`}
+        >
+          <div
+            className="h-full bg-gradient-to-r
+              from-green-400 to-green-600 transition-all
+              duration-300"
+            style={{ width: `${depthPercentage}%` }}
+          ></div>
+        </div>
+      </div>
+
       {error && (
         <div
           className="p-3 bg-red-50 rounded-md border
@@ -104,9 +211,9 @@ export function SuggestionPanel({
       )}
 
       {suggestion && (
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 min-h-0">
           <div className="flex flex-col flex-1
-            justify-around">
+            justify-around overflow-y-auto">
             {suggestion.suggestions.map(
               (item, idx) => (
                 <SuggestionRow

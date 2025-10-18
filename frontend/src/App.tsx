@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { GameBoard } from './components/GameBoard'
 import { SuggestionPanel } from './components/SuggestionPanel'
 import { TileColor } from './components/LetterTile'
@@ -11,7 +11,17 @@ function App() {
   const [isTyping, setIsTyping] = useState(false)
   const [typedWord, setTypedWord] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [maxDepth, setMaxDepth] = useState(10)
+  const [currentDepth, setCurrentDepth] = useState(0)
+  const [boardHeight, setBoardHeight] = useState(0)
+  const boardRef = useRef<HTMLDivElement>(null)
   const { gameState, addGuess, setFeedback } = useGameState()
+
+  useEffect(() => {
+    if (boardRef.current) {
+      setBoardHeight(boardRef.current.offsetHeight)
+    }
+  }, [])
 
   useEffect(() => {
     if (isDarkMode) {
@@ -158,25 +168,31 @@ function App() {
 
       <div className="flex gap-8 items-center">
         {/* Game Board */}
-        <GameBoard
-          guesses={gameState.guesses}
-          currentRowIndex={gameState.currentRowIndex}
-          suggestion={
-            mockSuggestion.topSuggestion.word
-          }
-          isTyping={isTyping}
-          typedWord={typedWord}
-          onGuessSubmit={handleGuessSubmit}
-          onTypingChange={handleTypingChange}
-          onTileClick={handleTileClick}
-          isDarkMode={isDarkMode}
-        />
+        <div ref={boardRef}>
+          <GameBoard
+            guesses={gameState.guesses}
+            currentRowIndex={gameState.currentRowIndex}
+            suggestion={
+              mockSuggestion.topSuggestion.word
+            }
+            isTyping={isTyping}
+            typedWord={typedWord}
+            onGuessSubmit={handleGuessSubmit}
+            onTypingChange={handleTypingChange}
+            onTileClick={handleTileClick}
+            isDarkMode={isDarkMode}
+          />
+        </div>
 
         {/* Suggestion Panel */}
         <SuggestionPanel
           suggestion={mockSuggestion}
           isLoading={false}
           isDarkMode={isDarkMode}
+          maxDepth={maxDepth}
+          currentDepth={currentDepth}
+          onMaxDepthChange={setMaxDepth}
+          boardHeight={boardHeight}
         />
       </div>
     </div>

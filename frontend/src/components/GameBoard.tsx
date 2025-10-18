@@ -11,6 +11,7 @@ interface GameBoardProps {
   onGuessSubmit: (word: string) => void
   onTypingChange: (isTyping: boolean, word: string) => void
   onTileClick?: (rowIndex: number, tileIndex: number) => void
+  isDarkMode?: boolean
 }
 
 export function GameBoard({
@@ -22,6 +23,7 @@ export function GameBoard({
   onGuessSubmit,
   onTypingChange,
   onTileClick,
+  isDarkMode = false,
 }: GameBoardProps) {
   const boardRef = useRef<HTMLDivElement>(null)
 
@@ -96,7 +98,8 @@ export function GameBoard({
                     isSuggestion || showSuggestionOverlay
                   }
                   isActive={isCurrentRow}
-                  onClick={
+                  isDarkMode={isDarkMode}
+                  onColorCycle={
                     guess
                       ? () =>
                           onTileClick?.(

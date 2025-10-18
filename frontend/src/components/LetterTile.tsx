@@ -3,36 +3,58 @@ export type TileColor = 'empty' | 'green' | 'yellow' | 'gray'
 interface LetterTileProps {
   letter: string
   color: TileColor
-  onClick?: () => void
+  onColorCycle?: () => void
   isActive?: boolean
   isSuggestion?: boolean
+  isDarkMode?: boolean
 }
 
 const colorClasses: Record<TileColor, string> = {
   empty: 'bg-white text-black',
-  green: 'bg-green-600 text-white',
-  yellow: 'bg-yellow-500 text-black',
-  gray: 'bg-gray-500 text-white',
+  green: 'text-white',
+  yellow: 'text-white',
+  gray: 'text-white',
+}
+
+const colorStyles: Record<TileColor, React.CSSProperties> = {
+  empty: {},
+  green: { backgroundColor: '#6aaa64' },
+  yellow: { backgroundColor: '#c9b458' },
+  gray: { backgroundColor: '#787c7e' },
 }
 
 export function LetterTile({
   letter,
   color,
-  onClick,
+  onColorCycle,
   isActive = false,
   isSuggestion = false,
+  isDarkMode = false,
 }: LetterTileProps) {
+  const emptyBg = isDarkMode ? 'bg-gray-700' : 'bg-white'
+  const emptyText = isDarkMode ? 'text-white' : 'text-black'
+  const emptyClass = color === 'empty' ? `${emptyBg} ${emptyText}` : ''
+  const suggestionBg = isDarkMode ? 'bg-gray-700' : 'bg-white'
+  const isColored = color !== 'empty'
+  const borderClass = isColored ? 'border-0' : 'border-2'
+  const borderColor = isActive && !isColored
+    ? 'border-blue-500'
+    : !isColored
+      ? 'border-gray-300'
+      : ''
+
   return (
     <button
+      style={!isSuggestion ? colorStyles[color] : {}}
       className={`w-16 h-16 flex items-center justify-center
-        text-5xl font-black border-2
+        text-5xl font-black
         transition-all uppercase
-        ${colorClasses[color]}
+        ${borderClass} ${borderColor}
+        ${isSuggestion ? suggestionBg : emptyClass || colorClasses[color]}
         ${isSuggestion ? 'text-teal-500 opacity-50' : ''}
-        ${isActive ? 'border-blue-500' : 'border-gray-300'}
-        ${onClick ? 'cursor-pointer hover:scale-105 hover:shadow-md' : 'cursor-default'}
+        ${onColorCycle ? 'cursor-pointer' : 'cursor-default'}
         ${letter === '' && color === 'empty' && !isSuggestion ? 'opacity-50' : ''}`}
-      onClick={onClick}
+      onClick={onColorCycle}
     >
       {letter}
     </button>

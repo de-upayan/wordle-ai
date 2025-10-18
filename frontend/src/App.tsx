@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { GameBoard } from './components/GameBoard'
-import { ColorPanel } from './components/ColorPanel'
 import { SuggestionPanel } from './components/SuggestionPanel'
 import { TileColor } from './components/LetterTile'
 import { useGameState } from './hooks/useGameState'
@@ -11,10 +10,6 @@ const logger = createLogger('App')
 function App() {
   const [isTyping, setIsTyping] = useState(false)
   const [typedWord, setTypedWord] = useState('')
-  const [selectedColor, setSelectedColor] = useState<TileColor | null>(
-    null,
-  )
-  const [isPaintMode, setIsPaintMode] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const { gameState, addGuess, setFeedback } = useGameState()
 
@@ -51,7 +46,7 @@ function App() {
 
   const handleGuessSubmit = (word: string) => {
     logger.info('Guess submitted', { word })
-    const feedback: TileColor[] = Array(5).fill('empty')
+    const feedback: TileColor[] = Array(5).fill('gray')
     addGuess(word, feedback)
     setTypedWord('')
     setIsTyping(false)
@@ -62,15 +57,20 @@ function App() {
     setTypedWord(word.toUpperCase())
   }
 
+  const cycleColor = (
+    currentColor: TileColor
+  ): TileColor => {
+    const cycle: Record<TileColor, TileColor> = {
+      gray: 'yellow',
+      yellow: 'green',
+      green: 'gray',
+      empty: 'gray',
+    }
+    return cycle[currentColor]
+  }
+
   const handleTileClick = (rowIndex: number, tileIndex: number) => {
     logger.debug('Tile clicked', { rowIndex, tileIndex })
-
-    if (!selectedColor) {
-      logger.warn('No color selected', {
-        selectedColor,
-      })
-      return
-    }
 
     const guess = gameState.guesses[rowIndex]
     if (!guess) {
@@ -78,36 +78,27 @@ function App() {
       return
     }
 
-    logger.info('Painting tile', {
+    const currentColor = guess.feedback[tileIndex]
+    const newColor = cycleColor(currentColor)
+
+    logger.info('Cycling tile color', {
       rowIndex,
       tileIndex,
       letter: guess.word[tileIndex],
-      color: selectedColor,
+      from: currentColor,
+      to: newColor,
     })
 
     const updatedFeedback = [
       ...gameState.guesses[rowIndex].feedback,
     ]
-    updatedFeedback[tileIndex] = selectedColor
+    updatedFeedback[tileIndex] = newColor
     setFeedback(rowIndex, updatedFeedback)
 
     logger.debug('Updated feedback', {
       rowIndex,
       feedback: updatedFeedback,
     })
-  }
-
-  const handleColorSelect = (color: TileColor) => {
-    setSelectedColor(color)
-    logger.info('Color selected', { color })
-  }
-
-  const handlePaintModeToggle = (enabled: boolean) => {
-    setIsPaintMode(enabled)
-    if (!enabled) {
-      setSelectedColor(null)
-    }
-    logger.info('Paint mode toggled', { enabled })
   }
 
   const mockSuggestion = {
@@ -122,102 +113,55 @@ function App() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
+    <div className={`min-h-screen transition-colors duration-300
+      flex flex-col items-center justify-center ${
       isDarkMode
         ? 'bg-gray-900 text-white'
         : 'bg-white text-gray-900'
     }`}>
-      <div className="max-w-2xl mx-auto py-8 px-4">
-        {/* Dark Mode Toggle */}
-        <div className="flex justify-end mb-8">
-          <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className={`relative inline-flex h-8 w-14 items-center
-              rounded-full transition-colors duration-300 ${
-                isDarkMode
-                  ? 'bg-blue-600'
-                  : 'bg-gray-300'
-              }`}
-          >
-            <span
-              className={`inline-block h-6 w-6 transform
-                rounded-full bg-white transition-transform
-                duration-300 ${
-                  isDarkMode ? 'translate-x-7' : 'translate-x-1'
-                }`}
-            />
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-8 items-center">
-
-          <div
-            className={`flex gap-6 items-stretch ${
+      {/* Dark Mode Toggle */}
+      <div className="absolute top-8 right-8">
+        <button
+          onClick={() => setIsDarkMode(!isDarkMode)}
+          className={`relative inline-flex h-8 w-14 items-center
+            rounded-full transition-colors duration-300 ${
               isDarkMode
-                ? 'bg-gray-900'
-                : 'bg-white'
+                ? 'bg-blue-600'
+                : 'bg-gray-300'
             }`}
-          >
-            {/* Game Board */}
-            <div
-              className={`p-6 rounded-lg w-fit flex
-                justify-center ${
-                isDarkMode
-                  ? 'bg-gray-800'
-                  : 'bg-gray-50'
+        >
+          <span
+            className={`inline-block h-6 w-6 transform
+              rounded-full bg-white transition-transform
+              duration-300 ${
+                isDarkMode ? 'translate-x-7' : 'translate-x-1'
               }`}
-            >
-              <GameBoard
-                guesses={gameState.guesses}
-                currentRowIndex={gameState.currentRowIndex}
-                suggestion={
-                  mockSuggestion.topSuggestion.word
-                }
-                isTyping={isTyping}
-                typedWord={typedWord}
-                onGuessSubmit={handleGuessSubmit}
-                onTypingChange={handleTypingChange}
-                onTileClick={handleTileClick}
-              />
-            </div>
+          />
+        </button>
+      </div>
 
-            {/* Right Panel: Color Panel and Suggestion Panel */}
-            <div className="flex flex-col gap-4 flex-1">
-              {/* Color Panel */}
-              {gameState.currentRowIndex < 6 && (
-                <ColorPanel
-                  onColorSelect={handleColorSelect}
-                  isPaintMode={isPaintMode}
-                  onPaintModeToggle={handlePaintModeToggle}
-                  selectedColor={selectedColor}
-                  isDarkMode={isDarkMode}
-                />
-              )}
+      <div className="flex gap-8 items-center">
+        {/* Game Board */}
+        <GameBoard
+          guesses={gameState.guesses}
+          currentRowIndex={gameState.currentRowIndex}
+          suggestion={
+            mockSuggestion.topSuggestion.word
+          }
+          isTyping={isTyping}
+          typedWord={typedWord}
+          onGuessSubmit={handleGuessSubmit}
+          onTypingChange={handleTypingChange}
+          onTileClick={handleTileClick}
+          isDarkMode={isDarkMode}
+        />
 
-              {/* Suggestion Panel */}
-              <SuggestionPanel
-                suggestion={mockSuggestion}
-                isLoading={false}
-                isDarkMode={isDarkMode}
-              />
-            </div>
-          </div>
-
-          <div className={`p-4 rounded-md w-full text-sm ${
-            isDarkMode
-              ? 'bg-gray-800 text-gray-300'
-              : 'bg-blue-50 text-gray-700'
-          }`}>
-            <p className="mb-2 font-bold">Test Instructions:</p>
-            <p>• Type letters (A-Z) to fill the current row</p>
-            <p>• Press ENTER to submit your guess</p>
-            <p>• Press BACKSPACE to delete a letter</p>
-            <p>• Click paint can button to enter paint mode</p>
-            <p>• Select a color, then click tiles to paint them</p>
-            <p>• Click paint can button again to exit paint mode</p>
-            <p>• Check console for click/submit events</p>
-          </div>
-        </div>
+        {/* Suggestion Panel */}
+        <SuggestionPanel
+          suggestion={mockSuggestion}
+          isLoading={false}
+          isDarkMode={isDarkMode}
+        />
       </div>
     </div>
   )

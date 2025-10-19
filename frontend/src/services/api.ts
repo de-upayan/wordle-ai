@@ -164,12 +164,14 @@ export class WordleAIClient {
                         'stream-completed'
                       ) {
                         logger.info(
-                          'Stream completed event received, ' +
-                          'closing stream',
+                          'Stream completed event received',
                           { streamId }
                         )
                         if (streamId) {
-                          await this.closeStream(streamId)
+                          this.activeStreamStates.set(
+                            streamId,
+                            'completed'
+                          )
                         }
                         onComplete()
                         break

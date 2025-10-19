@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -202,7 +203,7 @@ func SuggestStream(
 	}
 
 	// Send completion event
-	streamLog.Info("Strategy completed, waiting for close")
+	streamLog.Info("Strategy completed, sending completion event")
 	completionEvent := map[string]any{
 		"streamId": streamID,
 		"status":   "completed",
@@ -219,9 +220,10 @@ func SuggestStream(
 		flusher.Flush()
 	}
 
-	// Keep stream open until frontend sends close event
-	<-closeChan
-	streamLog.Info("Stream closed by frontend")
+	// Wait 1 second before closing to allow frontend to
+	// process the completion event
+	time.Sleep(1 * time.Second)
+	streamLog.Info("Stream handler exiting")
 }
 
 // CloseStream handles POST /api/v1/suggest/close

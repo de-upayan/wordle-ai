@@ -1,16 +1,4 @@
-.PHONY: dev dev-backend dev-frontend test docker-down
-
-dev:
-	@echo "Starting Wordle AI development environment..."
-	@echo "Backend will run on http://localhost:8080"
-	@echo "Frontend will run on http://localhost:5173"
-	@echo "Logs will be written to backend/logs/main/current"
-	@echo "Press Ctrl+C to stop both services"
-	@trap 'kill %1 %2' EXIT; \
-	$(MAKE) dev-backend & \
-	sleep 2; \
-	$(MAKE) dev-frontend; \
-	wait
+.PHONY: dev-backend dev-frontend test docker-up docker-down
 
 dev-backend:
 	@cd backend && mkdir -p logs/main && \
@@ -21,6 +9,9 @@ dev-frontend:
 
 test:
 	cd backend && go test ./...
+
+docker-up:
+	docker-compose up --build
 
 docker-down:
 	docker-compose down

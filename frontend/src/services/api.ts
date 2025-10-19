@@ -3,12 +3,20 @@ import { createLogger } from '../utils/logger'
 
 const logger = createLogger('API')
 
-// Get API base URL from environment or default to localhost
+// Use relative URLs for API calls in production
+// In Kubernetes, Nginx proxies /api/* to backend-service:8080
+// In local dev, backend runs on localhost:8080
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:8080'
+
+// For production (Kubernetes), use relative path
+// For development, use absolute URL
+const isProduction = !((import.meta as any).env.DEV)
+const API_URL = isProduction ? '' : API_BASE_URL
 
 logger.info('API client initialized', {
-  apiBaseUrl: API_BASE_URL,
+  apiBaseUrl: API_URL || 'relative (proxied)',
+  environment: isProduction ? 'production' : 'development',
 })
 
 /**
@@ -43,7 +51,7 @@ export class WordleAIClient {
       maxDepth,
     }
 
-    const url = `${API_BASE_URL}/api/v1/suggest/stream`
+    const url = `${API_URL}/api/v1/suggest/stream`
     logger.info('Making request to backend', {
       url,
       historyLength: gameState.history.length,
@@ -235,7 +243,7 @@ export class WordleAIClient {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/suggest/close`,
+        `${API_URL}/api/v1/suggest/close`,
         {
           method: 'POST',
           headers: {

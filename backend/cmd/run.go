@@ -49,7 +49,7 @@ func Main() {
 	mux := http.NewServeMux()
 
 	// Initialize solving strategy
-	strategy := strategies.NewTestStrategy()
+	strategy := strategies.NewInformationGainStrategy()
 
 	// Register handlers
 	mux.HandleFunc(

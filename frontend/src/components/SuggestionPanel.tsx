@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { Suggestion, SuggestionItem } from '../types/index'
 
+// JavaScript's Number.MAX_VALUE is approximately 1.7976931348623157e+308
+// Go's math.MaxFloat64 is 1.7976931348623157e+308
+const MAX_FLOAT64 = 1.7976931348623157e308
+
 interface SuggestionPanelProps {
   suggestion?: Suggestion
   isLoading?: boolean
@@ -59,7 +63,8 @@ function SuggestionRow({
               : 'text-gray-700'
         }`}
       >
-        {item.score.toFixed(2)}
+        {item.score >= MAX_FLOAT64 ? '∞' :
+          item.score.toFixed(2)}
       </span>
     </div>
   )

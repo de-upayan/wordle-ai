@@ -6,9 +6,11 @@ import (
 
 // FilterCandidateWords filters the word list based on the
 // constraint map. Returns only words that satisfy all constraints:
-// - Green letters must be at exact positions
-// - Yellow letters must be in word but not at forbidden positions
-// - Gray letters must not appear in word
+//   - Green letters must be at exact positions
+//   - Yellow letters must be in word but not at forbidden
+//     positions
+//   - Gray letters must not appear in word (unless they're
+//     already green or yellow)
 func FilterCandidateWords(
 	constraints models.ConstraintMap,
 	wordList []string,
@@ -25,52 +27,86 @@ func FilterCandidateWords(
 }
 
 // matchesConstraints checks if a word satisfies all constraints
+// using minimum and maximum letter count logic
 func matchesConstraints(
 	word string,
 	constraints models.ConstraintMap,
 ) bool {
-	// Check green letters (exact position matches)
+	// Step 1: Calculate minimum required counts for each letter
+	// based on Green and Yellow constraints
+	minRequiredCounts := make(map[string]int)
+
+	// Add counts from Green letters
+	for _, letter := range constraints.GreenLetters {
+		minRequiredCounts[letter]++
+	}
+
+	// Add counts from Yellow letters
+	for letter := range constraints.YellowLetters {
+		minRequiredCounts[letter]++
+	}
+
+	// Step 2: Check Green Letters (exact position matches)
 	for pos, letter := range constraints.GreenLetters {
 		if pos >= len(word) || string(word[pos]) != letter {
 			return false
 		}
 	}
 
-	// Check yellow letters (must be in word but not at
-	// forbidden positions)
+	// Step 3: Check Yellow Letters (must be present and not
+	// at forbidden positions)
 	for letter, forbiddenPositions := range constraints.YellowLetters {
-		// Letter must exist in word
-		if !contains(word, letter) {
-			return false
-		}
-
-		// Letter must not be at forbidden positions
+		// Check not at forbidden positions
 		for _, pos := range forbiddenPositions {
 			if pos < len(word) &&
 				string(word[pos]) == letter {
 				return false
 			}
 		}
+
+		// Check minimum required count
+		requiredCount := minRequiredCounts[letter]
+		actualCount := countLetter(word, letter)
+		if actualCount < requiredCount {
+			return false
+		}
 	}
 
-	// Check gray letters (must not be in word)
+	// Step 4: Check Gray Letters (enforce maximum count)
+	// Gray tiles indicate either:
+	// A) Letter doesn't exist in word (if not in green/yellow)
+	// B) Letter exists exactly N times (if in green/yellow)
 	for grayLetter := range constraints.GrayLetters {
-		if contains(word, grayLetter) {
-			return false
+		requiredCount, isConfirmed := minRequiredCounts[grayLetter]
+
+		if !isConfirmed {
+			// Letter is ONLY gray (never appeared green/yellow)
+			// It must not appear in word at all
+			if countLetter(word, grayLetter) > 0 {
+				return false
+			}
+		} else {
+			// Letter appeared as gray AND green/yellow
+			// It must appear exactly requiredCount times
+			actualCount := countLetter(word, grayLetter)
+			if actualCount > requiredCount {
+				return false
+			}
 		}
 	}
 
 	return true
 }
 
-// contains checks if a word contains a letter
-func contains(word, letter string) bool {
+// countLetter counts occurrences of a letter in a word
+func countLetter(word, letter string) int {
+	count := 0
 	for _, ch := range word {
 		if string(ch) == letter {
-			return true
+			count++
 		}
 	}
-	return false
+	return count
 }
 
 // GetFeedback calculates Wordle feedback for a guess against

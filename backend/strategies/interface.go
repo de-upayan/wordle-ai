@@ -12,7 +12,6 @@ import (
 type SuggestionCallback func(
 	suggestions []models.SuggestionItem,
 	depth int,
-	done bool,
 	remainingAnswers int,
 ) bool
 

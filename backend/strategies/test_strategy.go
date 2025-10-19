@@ -76,9 +76,7 @@ func (ts *TestStrategy) Solve(
 		suggestions := ts.getSuggestions(depth)
 
 		// Call the callback with suggestions
-		// done is true when we reach maxDepth
-		done := depth == maxDepth
-		if !callback(suggestions, depth, done, 1) {
+		if !callback(suggestions, depth, 1) {
 			// Callback returned false, stop solving
 			break
 		}

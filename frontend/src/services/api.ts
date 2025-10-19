@@ -12,19 +12,10 @@ logger.info('API client initialized', {
 })
 
 /**
- * Represents a suggestion stream with ID and event source
- */
-interface SuggestionStream {
-  streamId: string
-  eventSource: EventSource
-}
-
-/**
  * API client for Wordle AI backend
  * Handles suggestion streaming and cancellation
  */
 export class WordleAIClient {
-  private activeStreamId: string | null = null
   private activeStreamStates: Map<string, 'active' | 'completed'> =
     new Map()
 
@@ -162,10 +153,26 @@ export class WordleAIClient {
                           'Received suggestion event',
                           {
                             depth: data.depth,
-                            done: data.done,
                           }
                         )
                         onSuggestion(data)
+                      }
+                      // Close stream when completion
+                      // event is received
+                      if (
+                        currentEventType ===
+                        'stream-completed'
+                      ) {
+                        logger.info(
+                          'Stream completed event received, ' +
+                          'closing stream',
+                          { streamId }
+                        )
+                        if (streamId) {
+                          await this.closeStream(streamId)
+                        }
+                        onComplete()
+                        break
                       }
                     } catch (e) {
                       logger.warn('Failed to parse event', {

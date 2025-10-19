@@ -88,6 +88,5 @@ type SuggestionsEvent struct {
 	Suggestions      []SuggestionItem `json:"suggestions"`
 	TopSuggestion    *SuggestionItem  `json:"topSuggestion"`
 	Depth            int              `json:"depth"`
-	Done             bool             `json:"done"`
 	RemainingAnswers int              `json:"remainingAnswers"`
 }

@@ -69,8 +69,10 @@ func SuggestStream(
 		"maxDepth", req.MaxDepth,
 	)
 
-	// Create close channel for this stream
-	closeChan := make(chan struct{})
+	// Create buffered close channel for this stream
+	// Buffered with capacity 1 to prevent race conditions
+	// where close signal is sent before handler is listening
+	closeChan := make(chan struct{}, 1)
 	streamsMutex.Lock()
 	activeStreams[streamID] = closeChan
 	streamsMutex.Unlock()
@@ -143,7 +145,6 @@ func SuggestStream(
 	callback := func(
 		suggestions []models.SuggestionItem,
 		depth int,
-		done bool,
 		remainingAnswers int,
 	) bool {
 		var topSuggestion *models.SuggestionItem
@@ -156,7 +157,6 @@ func SuggestStream(
 			Suggestions:      suggestions,
 			TopSuggestion:    topSuggestion,
 			Depth:            depth,
-			Done:             done,
 			RemainingAnswers: remainingAnswers,
 		}
 

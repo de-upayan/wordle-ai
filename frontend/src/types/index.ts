@@ -54,7 +54,6 @@ export interface SuggestionsEvent {
   suggestions: SuggestionItem[]
   topSuggestion: SuggestionItem | null
   depth: number
-  done: boolean
   remainingAnswers: number
 }
 

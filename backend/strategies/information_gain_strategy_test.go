@@ -157,7 +157,6 @@ func TestSolveWithNoConstraints(t *testing.T) {
 	callback := func(
 		suggestions []models.SuggestionItem,
 		depth int,
-		done bool,
 		remainingAnswers int,
 	) bool {
 		callCount++
@@ -200,7 +199,6 @@ func TestSolveContextCancellation(t *testing.T) {
 	callback := func(
 		suggestions []models.SuggestionItem,
 		depth int,
-		done bool,
 		remainingAnswers int,
 	) bool {
 		return true
@@ -230,7 +228,6 @@ func TestSolveCallbackStopsSearch(t *testing.T) {
 	callback := func(
 		suggestions []models.SuggestionItem,
 		depth int,
-		done bool,
 		remainingAnswers int,
 	) bool {
 		callCount++
@@ -266,7 +263,6 @@ func TestSolveWithConstraints(t *testing.T) {
 	callback := func(
 		sugg []models.SuggestionItem,
 		depth int,
-		done bool,
 		remainingAnswers int,
 	) bool {
 		suggestions = sugg
@@ -319,7 +315,6 @@ func TestInformationGainVsTestStrategy(t *testing.T) {
 	igCallback := func(
 		suggestions []models.SuggestionItem,
 		depth int,
-		done bool,
 		remainingAnswers int,
 	) bool {
 		igCount++
@@ -339,7 +334,6 @@ func TestInformationGainVsTestStrategy(t *testing.T) {
 	testCallback := func(
 		suggestions []models.SuggestionItem,
 		depth int,
-		done bool,
 		remainingAnswers int,
 	) bool {
 		testCount++

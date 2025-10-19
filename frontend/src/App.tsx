@@ -277,6 +277,7 @@ function App() {
             onTypingChange={handleTypingChange}
             onTileClick={handleTileClick}
             isDarkMode={isDarkMode}
+            puzzleState={puzzleState || undefined}
           />
         </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { LetterTile, TileColor } from './LetterTile'
-import { Guess } from '../types/index'
+import { Guess, PuzzleState } from '../types/index'
 
 interface GameBoardProps {
   guesses: Guess[]
@@ -12,6 +12,7 @@ interface GameBoardProps {
   onTypingChange: (isTyping: boolean, word: string) => void
   onTileClick?: (rowIndex: number, tileIndex: number) => void
   isDarkMode?: boolean
+  puzzleState?: PuzzleState
 }
 
 export function GameBoard({
@@ -24,6 +25,7 @@ export function GameBoard({
   onTypingChange,
   onTileClick,
   isDarkMode = false,
+  puzzleState,
 }: GameBoardProps) {
   const boardRef = useRef<HTMLDivElement>(null)
 
@@ -109,6 +111,7 @@ export function GameBoard({
                   }
                   isActive={isCurrentRow}
                   isDarkMode={isDarkMode}
+                  puzzleState={puzzleState}
                   onColorCycle={
                     guess
                       ? () =>

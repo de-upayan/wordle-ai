@@ -1,3 +1,5 @@
+import { PuzzleState } from '../types/index'
+
 export type TileColor = 'empty' | 'green' | 'yellow' | 'gray'
 
 interface LetterTileProps {
@@ -7,6 +9,7 @@ interface LetterTileProps {
   isActive?: boolean
   isSuggestion?: boolean
   isDarkMode?: boolean
+  puzzleState?: PuzzleState
 }
 
 const colorClasses: Record<TileColor, string> = {
@@ -30,6 +33,7 @@ export function LetterTile({
   isActive = false,
   isSuggestion = false,
   isDarkMode = false,
+  puzzleState,
 }: LetterTileProps) {
   const emptyBg = isDarkMode ? 'bg-gray-700' : 'bg-white'
   const emptyText = isDarkMode ? 'text-white' : 'text-black'
@@ -38,7 +42,9 @@ export function LetterTile({
   const isColored = color !== 'empty'
   const borderClass = isColored ? 'border-0' : 'border-2'
   const borderColor = isActive && !isColored
-    ? 'border-blue-500'
+    ? puzzleState === PuzzleState.INVALID
+      ? 'border-red-500'
+      : 'border-blue-500'
     : !isColored
       ? 'border-gray-300'
       : ''

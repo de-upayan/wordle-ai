@@ -33,8 +33,6 @@ function App() {
     PuzzleState | null
   >(null)
   const boardRef = useRef<HTMLDivElement>(null)
-  const streamIdRef = useRef<string | null>(null)
-  const activeStreamIdRef = useRef<string | null>(null)
   const { gameState, addGuess, setFeedback } = useGameState()
 
   useEffect(() => {
@@ -71,6 +69,8 @@ function App() {
       maxDepth,
     })
 
+    let currentStreamId: string | null = null
+
     // Start new stream
     wordleAIClient
       .streamSuggestions(
@@ -78,15 +78,6 @@ function App() {
         gameState.constraints,
         maxDepth,
         (event: SuggestionsEvent) => {
-          // Ignore callbacks from old streams
-          if (event.streamId !== activeStreamIdRef.current) {
-            logger.debug('Ignoring event from old stream', {
-              eventStreamId: event.streamId,
-              activeStreamId: activeStreamIdRef.current,
-            })
-            return
-          }
-
           logger.debug('Received suggestions', {
             depth: event.depth,
             count: event.suggestions.length,
@@ -114,8 +105,7 @@ function App() {
         logger.info('Stream started successfully', {
           streamId,
         })
-        streamIdRef.current = streamId
-        activeStreamIdRef.current = streamId
+        currentStreamId = streamId
       })
       .catch((err) => {
         logger.error('Failed to start stream', {
@@ -127,11 +117,11 @@ function App() {
     return () => {
       // Cleanup: close stream if component unmounts
       // or dependencies change
-      if (streamIdRef.current) {
+      if (currentStreamId) {
         logger.info('Closing stream on cleanup', {
-          streamId: streamIdRef.current,
+          streamId: currentStreamId,
         })
-        wordleAIClient.closeStream(streamIdRef.current)
+        wordleAIClient.closeStream(currentStreamId)
           .catch((err: Error) => {
             logger.warn('Failed to close stream on cleanup', {
               error: String(err),

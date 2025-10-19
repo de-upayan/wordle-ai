@@ -104,6 +104,8 @@ export class WordleAIClient {
 
           const processStream = async () => {
             try {
+              let currentEventType = ''
+
               while (true) {
                 const { done, value } = await reader.read()
                 if (done) {
@@ -128,7 +130,13 @@ export class WordleAIClient {
                 buffer = lines.pop() || ''
 
                 for (const line of lines) {
-                  if (line.startsWith('data: ')) {
+                  // Track event type
+                  if (line.startsWith('event: ')) {
+                    currentEventType = line.substring(7)
+                    logger.debug('Received event type', {
+                      eventType: currentEventType,
+                    })
+                  } else if (line.startsWith('data: ')) {
                     try {
                       const data = JSON.parse(
                         line.substring(6)
@@ -146,14 +154,19 @@ export class WordleAIClient {
                         })
                         resolve(streamId)
                       }
-                      logger.debug(
-                        'Received suggestion event',
-                        {
-                          depth: data.depth,
-                          done: data.done,
-                        }
-                      )
-                      onSuggestion(data)
+                      // Only process suggestions events
+                      if (
+                        currentEventType === 'suggestions'
+                      ) {
+                        logger.debug(
+                          'Received suggestion event',
+                          {
+                            depth: data.depth,
+                            done: data.done,
+                          }
+                        )
+                        onSuggestion(data)
+                      }
                     } catch (e) {
                       logger.warn('Failed to parse event', {
                         error: String(e),

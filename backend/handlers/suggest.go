@@ -58,13 +58,16 @@ func SuggestStream(
 		return
 	}
 
-	log.Info("Request decoded successfully",
+	// Generate unique stream ID
+	streamID := uuid.New().String()
+
+	// Create logger with streamID context
+	streamLog := log.WithStreamID(streamID)
+
+	streamLog.Info("Request decoded successfully",
 		"guessNumber", req.GuessNumber,
 		"maxDepth", req.MaxDepth,
 	)
-
-	// Generate unique stream ID
-	streamID := uuid.New().String()
 
 	// Create cancel channel for this stream
 	cancelChan := make(chan struct{})
@@ -89,10 +92,33 @@ func SuggestStream(
 	// Get flusher for streaming
 	flusher, ok := w.(http.Flusher)
 	if !ok {
+		streamLog.Error("Streaming not supported",
+			"error", "flusher not available",
+		)
 		http.Error(w, "Streaming not supported",
 			http.StatusInternalServerError)
 		return
 	}
+
+	// Send initial response with stream ID
+	initialResponse := map[string]string{
+		"streamId": streamID,
+	}
+	data, err := json.Marshal(initialResponse)
+	if err != nil {
+		streamLog.Error("Error marshaling initial response",
+			"error", err,
+		)
+		http.Error(w, "Internal server error",
+			http.StatusInternalServerError)
+		return
+	}
+
+	streamLog.Info("Stream created")
+
+	fmt.Fprintf(w, "event: stream-created\n")
+	fmt.Fprintf(w, "data: %s\n\n", string(data))
+	flusher.Flush()
 
 	// TODO(de-upayan): Implement word filtering based on
 	// constraints (greenLetters, yellowLetters, grayLetters)
@@ -137,17 +163,22 @@ func SuggestStream(
 		// Marshal event data
 		data, err := json.Marshal(suggestionsEvent)
 		if err != nil {
-			log.Error("Error marshaling event",
+			streamLog.Error("Error marshaling event",
 				"error", err,
 			)
 			return true
 		}
 
-		log.Debug("Sending suggestions event",
+		topWord := ""
+		if topSuggestion != nil {
+			topWord = topSuggestion.Word
+		}
+
+		streamLog.Debug("Sending suggestions event",
 			"depth", depth,
 			"count", len(suggestions),
 			"remainingAnswers", remainingAnswers,
-			"topSuggestion", topSuggestion,
+			"topWord", topWord,
 		)
 
 		// Send SSE event
@@ -165,7 +196,7 @@ func SuggestStream(
 		req.MaxDepth,
 		callback,
 	); err != nil {
-		log.Debug("Strategy solve completed or cancelled",
+		streamLog.Debug("Strategy solve completed or cancelled",
 			"error", err,
 		)
 	}
@@ -198,15 +229,17 @@ func CancelStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info("Cancel request decoded",
-		"streamID", req.StreamID,
-	)
+	streamID := req.StreamID
+	streamLog := log.WithStreamID(streamID)
+
+	streamLog.Info("Cancel request decoded")
 
 	streamsMutex.RLock()
 	cancelChan, exists := activeStreams[req.StreamID]
 	streamsMutex.RUnlock()
 
 	if !exists {
+		streamLog.Warn("Stream not found")
 		http.Error(w, "Stream not found",
 			http.StatusNotFound)
 		return
@@ -215,14 +248,10 @@ func CancelStream(w http.ResponseWriter, r *http.Request) {
 	// Signal cancellation
 	select {
 	case cancelChan <- struct{}{}:
-		log.Info("Stream cancelled successfully",
-			"streamID", req.StreamID,
-		)
+		streamLog.Info("Stream cancelled successfully")
 	default:
 		// Stream already finished
-		log.Debug("Stream already finished",
-			"streamID", req.StreamID,
-		)
+		streamLog.Debug("Stream already finished")
 	}
 
 	w.Header().Set("Content-Type", "application/json")

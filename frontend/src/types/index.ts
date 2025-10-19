@@ -19,12 +19,12 @@ export interface Constraints {
 }
 
 /**
- * Game status enum
+ * Puzzle state based on remaining answers
  */
-export enum GameStatus {
-  PLAYING = 'playing',
-  WON = 'won',
-  LOST = 'lost',
+export enum PuzzleState {
+  VALID = 'valid',
+  SOLVED = 'solved',
+  INVALID = 'invalid',
 }
 
 /**
@@ -35,7 +35,6 @@ export interface GameState {
   guesses: Guess[]
   constraints: Constraints
   guessCount: number
-  gameStatus: GameStatus
   currentRowIndex: number
 }
 
@@ -71,5 +70,6 @@ export type SSEEvent = SuggestionsEvent
 export interface Suggestion {
   suggestions: SuggestionItem[]
   topSuggestion: SuggestionItem
+  remainingAnswers: number
 }
 

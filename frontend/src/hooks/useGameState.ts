@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import {
   GameState,
-  GameStatus,
   Guess,
   Constraints,
 } from '../types/index'
@@ -20,7 +19,6 @@ export function useGameState() {
       grayLetters: new Set(),
     },
     guessCount: 0,
-    gameStatus: GameStatus.PLAYING,
     currentRowIndex: 0,
   })
 
@@ -152,23 +150,9 @@ export function useGameState() {
         grayLetters: new Set(),
       },
       guessCount: 0,
-      gameStatus: GameStatus.PLAYING,
       currentRowIndex: 0,
     })
   }, [])
-
-  /**
-   * Set game status (won/lost)
-   */
-  const setGameStatus = useCallback(
-    (status: GameStatus) => {
-      setGameState((prev) => ({
-        ...prev,
-        gameStatus: status,
-      }))
-    },
-    []
-  )
 
   return {
     gameState,
@@ -178,7 +162,6 @@ export function useGameState() {
     reset,
     isRowComplete,
     moveToNextRow,
-    setGameStatus,
   }
 }
 

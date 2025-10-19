@@ -1,28 +1,26 @@
-import { GameStatus } from '../types/index'
+import { PuzzleState } from '../types/index'
 
 interface InstructionPanelProps {
-  gameStatus: GameStatus
-  guessCount: number
   isDarkMode?: boolean
+  puzzleState?: PuzzleState | null
 }
 
 export function InstructionPanel({
-  gameStatus,
-  guessCount,
   isDarkMode = false,
+  puzzleState,
 }: InstructionPanelProps) {
   const getInstructionText = (): string => {
-    switch (gameStatus) {
-      case GameStatus.WON:
-        return `You won in ${guessCount} ${
-          guessCount === 1 ? 'guess' : 'guesses'
-        }! 🎉`
-      case GameStatus.LOST:
-        return 'Game over! You ran out of guesses. 😢'
-      case GameStatus.PLAYING:
-      default:
-        return 'Type your guess, press ⏎ to accept, and click on the letters to toggle their color. ⇧+⏎ to accept the top suggestion.'
+    // Check puzzle state
+    if (puzzleState === PuzzleState.INVALID) {
+      return 'No valid answers left. Maybe you set a letter to the wrong color?'
     }
+
+    if (puzzleState === PuzzleState.SOLVED) {
+      return 'That\'s it! Puzzle solved.'
+    }
+
+    // Default instruction
+    return 'Type your guess, press ⏎ to accept, and click on the letters to toggle their color. ⇧+⏎ to accept the top suggestion.'
   }
 
   return (

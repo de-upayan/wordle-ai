@@ -9,6 +9,7 @@ import { wordleAIClient } from './services/api'
 import {
   SuggestionsEvent,
   Suggestion,
+  PuzzleState,
 } from './types/index'
 
 const logger = createLogger('App')
@@ -27,6 +28,9 @@ function App() {
     useState(false)
   const [suggestionError, setSuggestionError] = useState<
     string | null
+  >(null)
+  const [puzzleState, setPuzzleState] = useState<
+    PuzzleState | null
   >(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const streamIdRef = useRef<string | null>(null)
@@ -84,6 +88,7 @@ function App() {
           setSuggestion({
             suggestions: event.suggestions,
             topSuggestion: event.topSuggestion,
+            remainingAnswers: event.remainingAnswers,
           })
         },
         (error: Error) => {
@@ -211,6 +216,7 @@ function App() {
   const defaultSuggestion: Suggestion = {
     suggestions: [],
     topSuggestion: { word: '', score: 0 },
+    remainingAnswers: 0,
   }
 
   return (
@@ -286,14 +292,14 @@ function App() {
           currentDepth={currentDepth}
           onMaxDepthChange={setMaxDepth}
           boardHeight={boardHeight}
+          onPuzzleStateChange={setPuzzleState}
         />
       </div>
 
       {/* Instruction Panel */}
       <InstructionPanel
-        gameStatus={gameState.gameStatus}
-        guessCount={gameState.guessCount}
         isDarkMode={isDarkMode}
+        puzzleState={puzzleState}
       />
 
       {/* Footer */}

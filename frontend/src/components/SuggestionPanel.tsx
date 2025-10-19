@@ -1,9 +1,16 @@
-import { useState } from 'react'
-import { Suggestion, SuggestionItem } from '../types/index'
+import { useState, useEffect } from 'react'
+import { Suggestion, SuggestionItem, PuzzleState } from '../types/index'
+import {
+  getPuzzleState,
+  getPuzzleStateTextStyle,
+} from '../utils/puzzleStateStyles'
 
 // JavaScript's Number.MAX_VALUE is approximately 1.7976931348623157e+308
 // Go's math.MaxFloat64 is 1.7976931348623157e+308
 const MAX_FLOAT64 = 1.7976931348623157e308
+
+// Maximum number of suggestions to display
+const MAX_SUGGESTIONS = 4
 
 interface SuggestionPanelProps {
   suggestion?: Suggestion
@@ -14,17 +21,29 @@ interface SuggestionPanelProps {
   currentDepth?: number
   onMaxDepthChange?: (depth: number) => void
   boardHeight?: number
+  onPuzzleStateChange?: (state: PuzzleState | null) => void
 }
 
 function SuggestionRow({
   item,
   isTop,
   isDarkMode,
+  isBlank = false,
 }: {
-  item: SuggestionItem
+  item?: SuggestionItem
   isTop: boolean
   isDarkMode: boolean
+  isBlank?: boolean
 }) {
+  if (isBlank) {
+    return (
+      <div
+        className="py-3 flex items-center justify-between
+          gap-3 bg-transparent"
+      />
+    )
+  }
+
   return (
     <div
       className="py-3 flex items-center justify-between gap-3
@@ -32,7 +51,7 @@ function SuggestionRow({
     >
       {/* Word with letter squares */}
       <div className="flex gap-1">
-        {item.word.split('').map((letter, idx) => (
+        {item!.word.split('').map((letter, idx) => (
           <div
             key={idx}
             className={`w-8 h-8 flex items-center
@@ -63,8 +82,8 @@ function SuggestionRow({
               : 'text-gray-700'
         }`}
       >
-        {item.score >= MAX_FLOAT64 ? '∞' :
-          item.score.toFixed(2)}
+        {item!.score >= MAX_FLOAT64 ? '∞' :
+          item!.score.toFixed(2)}
       </span>
     </div>
   )
@@ -79,6 +98,7 @@ export function SuggestionPanel({
   currentDepth = 0,
   onMaxDepthChange,
   boardHeight = 0,
+  onPuzzleStateChange,
 }: SuggestionPanelProps) {
   const [localMaxDepth, setLocalMaxDepth] = useState(
     maxDepth
@@ -95,6 +115,14 @@ export function SuggestionPanel({
   const depthPercentage = maxDepth > 0
     ? (currentDepth / maxDepth) * 100
     : 0
+
+  const puzzleState = suggestion
+    ? getPuzzleState(suggestion.remainingAnswers)
+    : null
+
+  useEffect(() => {
+    onPuzzleStateChange?.(puzzleState)
+  }, [puzzleState, onPuzzleStateChange])
 
   return (
     <div
@@ -217,17 +245,49 @@ export function SuggestionPanel({
 
       {suggestion && (
         <div className="flex flex-col flex-1 min-h-0">
+          {/* Remaining Answers Count */}
+          <div className={`mb-3 pb-3 border-b ${
+            isDarkMode ? 'border-gray-700' :
+              'border-gray-200'
+          }`}>
+            <div className="flex justify-between
+              items-center">
+              <p className={`text-xs font-semibold ${
+                isDarkMode
+                  ? 'text-gray-400'
+                  : 'text-gray-600'
+              }`}>
+                Remaining Answers
+              </p>
+              <p className={`text-lg font-bold ${
+                puzzleState
+                  ? getPuzzleStateTextStyle(
+                      puzzleState,
+                      isDarkMode
+                    )
+                  : ''
+              }`}>
+                {suggestion.remainingAnswers}
+              </p>
+            </div>
+          </div>
+
+          {/* Suggestions List */}
           <div className="flex flex-col flex-1
             justify-around overflow-y-auto">
-            {suggestion.suggestions.map(
-              (item, idx) => (
-                <SuggestionRow
-                  key={idx}
-                  item={item}
-                  isTop={idx === 0}
-                  isDarkMode={isDarkMode}
-                />
-              ),
+            {Array.from({ length: MAX_SUGGESTIONS }).map(
+              (_, idx) => {
+                const item = suggestion.suggestions[idx]
+                return (
+                  <SuggestionRow
+                    key={idx}
+                    item={item}
+                    isTop={idx === 0}
+                    isDarkMode={isDarkMode}
+                    isBlank={!item}
+                  />
+                )
+              },
             )}
           </div>
         </div>

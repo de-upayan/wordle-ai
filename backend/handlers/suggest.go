@@ -70,10 +70,8 @@ func SuggestStream(
 		"maxDepth", req.MaxDepth,
 	)
 
-	// Create buffered close channel for this stream
-	// Buffered with capacity 1 to prevent race conditions
-	// where close signal is sent before handler is listening
-	closeChan := make(chan struct{}, 1)
+	// Create close channel for this stream
+	closeChan := make(chan struct{})
 	streamsMutex.Lock()
 	activeStreams[streamID] = closeChan
 	streamsMutex.Unlock()

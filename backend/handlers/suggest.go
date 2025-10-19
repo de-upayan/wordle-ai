@@ -120,10 +120,15 @@ func SuggestStream(
 		done bool,
 		remainingAnswers int,
 	) bool {
+		var topSuggestion *models.SuggestionItem
+		if len(suggestions) > 0 {
+			topSuggestion = &suggestions[0]
+		}
+
 		suggestionsEvent := models.SuggestionsEvent{
 			StreamID:         streamID,
 			Suggestions:      suggestions,
-			TopSuggestion:    suggestions[0],
+			TopSuggestion:    topSuggestion,
 			Depth:            depth,
 			Done:             done,
 			RemainingAnswers: remainingAnswers,
@@ -141,6 +146,8 @@ func SuggestStream(
 		log.Debug("Sending suggestions event",
 			"depth", depth,
 			"count", len(suggestions),
+			"remainingAnswers", remainingAnswers,
+			"topSuggestion", topSuggestion,
 		)
 
 		// Send SSE event

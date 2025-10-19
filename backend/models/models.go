@@ -86,7 +86,7 @@ type SuggestionItem struct {
 type SuggestionsEvent struct {
 	StreamID         string           `json:"streamId"`
 	Suggestions      []SuggestionItem `json:"suggestions"`
-	TopSuggestion    SuggestionItem   `json:"topSuggestion"`
+	TopSuggestion    *SuggestionItem  `json:"topSuggestion"`
 	Depth            int              `json:"depth"`
 	Done             bool             `json:"done"`
 	RemainingAnswers int              `json:"remainingAnswers"`

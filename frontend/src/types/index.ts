@@ -52,7 +52,7 @@ export interface SuggestionItem {
 export interface SuggestionsEvent {
   streamId: string
   suggestions: SuggestionItem[]
-  topSuggestion: SuggestionItem
+  topSuggestion: SuggestionItem | null
   depth: number
   done: boolean
   remainingAnswers: number
@@ -69,7 +69,7 @@ export type SSEEvent = SuggestionsEvent
  */
 export interface Suggestion {
   suggestions: SuggestionItem[]
-  topSuggestion: SuggestionItem
+  topSuggestion: SuggestionItem | null
   remainingAnswers: number
 }
 

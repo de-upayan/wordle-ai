@@ -51,6 +51,16 @@ function App() {
     }
   }, [isDarkMode])
 
+  // Create a stable key for constraints to avoid
+  // unnecessary stream restarts
+  const constraintsKey = JSON.stringify({
+    green: gameState.constraints.greenLetters,
+    yellow: gameState.constraints.yellowLetters,
+    gray: Array.from(
+      gameState.constraints.grayLetters
+    ).sort(),
+  })
+
   // Fetch suggestions when game state changes
   useEffect(() => {
     setIsLoadingSuggestions(true)
@@ -60,19 +70,6 @@ function App() {
       guessCount: gameState.guessCount,
       maxDepth,
     })
-
-    // Cancel previous stream if one exists
-    if (streamIdRef.current) {
-      logger.info('Cancelling previous stream', {
-        streamId: streamIdRef.current,
-      })
-      wordleAIClient.cancelStream(streamIdRef.current)
-        .catch((err) => {
-          logger.warn('Failed to cancel previous stream', {
-            error: String(err),
-          })
-        })
-    }
 
     // Start new stream
     wordleAIClient
@@ -141,7 +138,7 @@ function App() {
           })
       }
     }
-  }, [gameState.guessCount, gameState.constraints, maxDepth])
+  }, [gameState.guessCount, constraintsKey, maxDepth])
 
   // Log game state changes
   useEffect(() => {
@@ -226,7 +223,7 @@ function App() {
   // Default suggestion when no data is available
   const defaultSuggestion: Suggestion = {
     suggestions: [],
-    topSuggestion: { word: '', score: 0 },
+    topSuggestion: null,
     remainingAnswers: 0,
   }
 
@@ -281,7 +278,7 @@ function App() {
             guesses={gameState.guesses}
             currentRowIndex={gameState.currentRowIndex}
             suggestion={
-              suggestion?.topSuggestion.word || ''
+              suggestion?.topSuggestion?.word || ''
             }
             isTyping={isTyping}
             typedWord={typedWord}

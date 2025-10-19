@@ -41,7 +41,7 @@ func (igs *InformationGainStrategy) Solve(
 
 	// If no possible answers, return empty suggestions
 	if len(possibleAnswers) == 0 {
-		callback([]models.SuggestionItem{}, 1, true)
+		callback([]models.SuggestionItem{}, 1, true, 0)
 		return nil
 	}
 
@@ -62,7 +62,12 @@ func (igs *InformationGainStrategy) Solve(
 
 		// Call callback with suggestions
 		done := depth == maxDepth
-		if !callback(suggestions, depth, done) {
+		if !callback(
+			suggestions,
+			depth,
+			done,
+			len(possibleAnswers),
+		) {
 			break
 		}
 	}

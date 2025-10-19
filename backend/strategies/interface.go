@@ -13,6 +13,7 @@ type SuggestionCallback func(
 	suggestions []models.SuggestionItem,
 	depth int,
 	done bool,
+	remainingAnswers int,
 ) bool
 
 // SolvingStrategy defines the interface for different Wordle
@@ -28,4 +29,3 @@ type SolvingStrategy interface {
 		callback SuggestionCallback,
 	) error
 }
-

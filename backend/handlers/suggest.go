@@ -118,13 +118,15 @@ func SuggestStream(
 		suggestions []models.SuggestionItem,
 		depth int,
 		done bool,
+		remainingAnswers int,
 	) bool {
 		suggestionsEvent := models.SuggestionsEvent{
-			StreamID:      streamID,
-			Suggestions:   suggestions,
-			TopSuggestion: suggestions[0],
-			Depth:         depth,
-			Done:          done,
+			StreamID:         streamID,
+			Suggestions:      suggestions,
+			TopSuggestion:    suggestions[0],
+			Depth:            depth,
+			Done:             done,
+			RemainingAnswers: remainingAnswers,
 		}
 
 		// Marshal event data

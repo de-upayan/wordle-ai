@@ -84,9 +84,10 @@ type SuggestionItem struct {
 // SuggestionsEvent represents an event with top 5
 // suggestions at current depth in the SSE stream
 type SuggestionsEvent struct {
-	StreamID      string           `json:"streamId"`
-	Suggestions   []SuggestionItem `json:"suggestions"`
-	TopSuggestion SuggestionItem   `json:"topSuggestion"`
-	Depth         int              `json:"depth"`
-	Done          bool             `json:"done"`
+	StreamID         string           `json:"streamId"`
+	Suggestions      []SuggestionItem `json:"suggestions"`
+	TopSuggestion    SuggestionItem   `json:"topSuggestion"`
+	Depth            int              `json:"depth"`
+	Done             bool             `json:"done"`
+	RemainingAnswers int              `json:"remainingAnswers"`
 }

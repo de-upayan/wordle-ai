@@ -197,3 +197,131 @@ func TestNoConstraints(t *testing.T) {
 			"got %d", len(result))
 	}
 }
+
+// Edge case tests for duplicate letters
+
+// Test 1: Guess has 2 of a letter, secret has 1 in different
+// position → expect 1 yellow, 1 gray
+func TestDuplicateLetterTwoGuessOneSecret(t *testing.T) {
+	// Answer: ERASE, Guess: SPEED
+	// S at pos 0: in ERASE but wrong position → Y
+	// P at pos 1: not in ERASE → B
+	// E at pos 2: in ERASE but wrong position → Y
+	// E at pos 3: in ERASE but already used → Y
+	// D at pos 4: not in ERASE → B
+	feedback := GetFeedback("ERASE", "SPEED")
+	expected := "YBYYB"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+// Test 2: Guess has 2 of a letter, secret has 1 in same
+// position → expect 1 green, 1 gray
+func TestDuplicateLetterTwoGuessOneSecretGreen(t *testing.T) {
+	// Guess: ROBOT, Answer: ROUND
+	// R at pos 0: matches R → G
+	// O at pos 1: matches O → G
+	// B at pos 2: not in ROUND → B
+	// O at pos 3: in ROUND but already used → B
+	// T at pos 4: not in ROUND → B
+	feedback := GetFeedback("ROUND", "ROBOT")
+	expected := "GGBBB"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+// Test 3: Guess has 2 of a letter, secret has 2 → expect
+// appropriate yellow/green combinations
+func TestDuplicateLetterTwoGuessTwo(t *testing.T) {
+	// Answer: GEESE, Guess: EERIE
+	// E at pos 0: in GEESE but wrong position → Y
+	// E at pos 1: matches E → G
+	// R at pos 2: not in GEESE → B
+	// I at pos 3: not in GEESE → B
+	// E at pos 4: matches E → G
+	feedback := GetFeedback("GEESE", "EERIE")
+	expected := "YGBBG"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+// Test 4: Guess has 3 of a letter, secret has 1 → expect 1
+// colored, 2 gray
+func TestDuplicateLetterThreeGuessOne(t *testing.T) {
+	// Answer: SPEED, Guess: EEEEE
+	// E at pos 0: not matching but in SPEED → Y
+	// E at pos 1: not matching but in SPEED → Y
+	// E at pos 2: matches E → G
+	// E at pos 3: matches E → G
+	// E at pos 4: in SPEED but already used → B
+	feedback := GetFeedback("SPEED", "EEEEE")
+	expected := "BBGGB"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+// Test 5: Guess has 3 of a letter, secret has 2 → expect 2
+// colored, 1 gray
+func TestDuplicateLetterThreeGuessTwo(t *testing.T) {
+	// Answer: GEESE, Guess: EEEEE
+	// E at pos 0: not matching but in GEESE → Y
+	// E at pos 1: matches E → G
+	// E at pos 2: not matching but in GEESE → Y
+	// E at pos 3: matches E → G
+	// E at pos 4: in GEESE but already used → B
+	feedback := GetFeedback("GEESE", "EEEEE")
+	expected := "BGGBG"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+// Test 6: Green priority - one green, one yellow for same
+// letter
+func TestGreenPriorityOverYellow(t *testing.T) {
+	// Answer: SLEET, Guess: LLAMA
+	// L at pos 0: not matching but in SLEET → Y
+	// L at pos 1: matches L → G
+	// A at pos 2: not in SLEET → B
+	// M at pos 3: not in SLEET → B
+	// A at pos 4: not in SLEET → B
+	feedback := GetFeedback("SLEET", "LLAMA")
+	expected := "BGBBB"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+// Test 7: Multiple duplicates in different positions
+func TestMultipleDuplicatesInDifferentPositions(t *testing.T) {
+	// Guess: AABBA, Answer: ABACA
+	// A at pos 0: matches A → G
+	// A at pos 1: in ABACA but wrong position → Y
+	// B at pos 2: in ABACA but wrong position → Y
+	// B at pos 3: in ABACA but already used → B
+	// A at pos 4: matches A → G
+	feedback := GetFeedback("ABACA", "AABBA")
+	expected := "GYYBG"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+// Test 8: All same letter, all in different positions
+func TestAllSameLetterDifferentPositions(t *testing.T) {
+	// Answer: ABACA, Guess: AAAAA
+	// A at pos 0: matches A → G (A count: 3→2)
+	// A at pos 1: not matching, A count is 2 → Y (A count: 2→1)
+	// A at pos 2: matches A → G (A count: 1→0)
+	// A at pos 3: not matching, A count is 0 → B
+	// A at pos 4: matches A → G (A count: 0→-1)
+	feedback := GetFeedback("ABACA", "AAAAA")
+	expected := "GBGBG"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}

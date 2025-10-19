@@ -128,6 +128,59 @@ func TestEmptyWordList(t *testing.T) {
 	}
 }
 
+func TestGetFeedbackAllGreen(t *testing.T) {
+	feedback := GetFeedback("SLATE", "SLATE")
+	expected := "GGGGG"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+func TestGetFeedbackAllBlack(t *testing.T) {
+	feedback := GetFeedback("SLATE", "XYZZZ")
+	expected := "BBBBB"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+func TestGetFeedbackMixed(t *testing.T) {
+	// SLATE vs STEAL: S=G, T=Y, E=Y, A=G, L=Y
+	feedback := GetFeedback("SLATE", "STEAL")
+	expected := "GYYYY"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+func TestGetFeedbackYellowLetters(t *testing.T) {
+	// SLATE vs LEAST: L=Y, E=Y, A=G, S=Y, T=Y
+	feedback := GetFeedback("SLATE", "LEAST")
+	expected := "YYGYY"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+func TestGetFeedbackDuplicateLetters(t *testing.T) {
+	// SLEET vs LLAMA: L=B (already used at pos 0),
+	// L=G, E=B, M=B, A=B
+	feedback := GetFeedback("SLEET", "LLAMA")
+	expected := "BGBBB"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
+func TestGetFeedbackDuplicateLettersYellow(t *testing.T) {
+	// SPEED vs ERASE: E=Y, R=B, A=B, S=Y, E=Y
+	feedback := GetFeedback("SPEED", "ERASE")
+	expected := "YBBYY"
+	if feedback != expected {
+		t.Errorf("Expected %s, got %s", expected, feedback)
+	}
+}
+
 func TestNoConstraints(t *testing.T) {
 	constraints := models.ConstraintMap{
 		GreenLetters:  make(map[int]string),

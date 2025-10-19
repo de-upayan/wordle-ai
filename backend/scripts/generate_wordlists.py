@@ -5,7 +5,6 @@ Converts answers.txt and guesses.txt into Go source files with
 global variables for efficient loading into service memory.
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -16,7 +15,7 @@ def read_wordlist(filepath):
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             for line in f:
-                word = line.strip()
+                word = line.strip().upper()
                 if word:  # Skip empty lines
                     words.append(word)
         return words

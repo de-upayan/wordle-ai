@@ -185,12 +185,12 @@ func TestSuggestStreamEventContent(t *testing.T) {
 	}
 }
 
-func TestCancelStreamInvalidMethod(t *testing.T) {
+func TestCloseStreamInvalidMethod(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet,
-		"/api/v1/suggest/cancel", nil)
+		"/api/v1/suggest/close", nil)
 	w := httptest.NewRecorder()
 
-	CancelStream(w, req)
+	CloseStream(w, req)
 
 	if w.Code != http.StatusMethodNotAllowed {
 		t.Errorf("Expected status %d, got %d",
@@ -198,18 +198,18 @@ func TestCancelStreamInvalidMethod(t *testing.T) {
 	}
 }
 
-func TestCancelStreamNotFound(t *testing.T) {
-	reqData := models.CancelRequest{
+func TestCloseStreamNotFound(t *testing.T) {
+	reqData := models.CloseRequest{
 		StreamID: "nonexistent-id",
 	}
 
 	body, _ := json.Marshal(reqData)
 	req := httptest.NewRequest(http.MethodPost,
-		"/api/v1/suggest/cancel",
+		"/api/v1/suggest/close",
 		bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
-	CancelStream(w, req)
+	CloseStream(w, req)
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("Expected status %d, got %d",

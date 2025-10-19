@@ -207,17 +207,17 @@ export class WordleAIClient {
   }
 
   /**
-   * Cancel an ongoing suggestion stream
-   * Only sends cancel request if stream is still active
+   * Close an ongoing suggestion stream
+   * Sends close request to signal stream closure
    */
-  async cancelStream(streamId: string): Promise<void> {
-    logger.info('Attempting to cancel stream', {
+  async closeStream(streamId: string): Promise<void> {
+    logger.info('Attempting to close stream', {
       streamId,
     })
 
     // Check if stream is still active
     if (!this.isStreamActive(streamId)) {
-      logger.debug('Stream already completed, skipping cancel', {
+      logger.debug('Stream already completed, skipping close', {
         streamId,
       })
       return
@@ -225,7 +225,7 @@ export class WordleAIClient {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/suggest/cancel`,
+        `${API_BASE_URL}/api/v1/suggest/close`,
         {
           method: 'POST',
           headers: {
@@ -241,13 +241,13 @@ export class WordleAIClient {
         )
       }
 
-      logger.info('Stream cancelled successfully', {
+      logger.info('Stream closed successfully', {
         streamId,
       })
-      // Mark as completed after successful cancellation
+      // Mark as completed after successful closure
       this.activeStreamStates.set(streamId, 'completed')
     } catch (error) {
-      logger.error('Failed to cancel stream', {
+      logger.error('Failed to close stream', {
         streamId,
         error: String(error),
       })

@@ -125,14 +125,15 @@ function App() {
       })
 
     return () => {
-      // Cleanup: cancel stream if component unmounts
+      // Cleanup: close stream if component unmounts
+      // or dependencies change
       if (streamIdRef.current) {
-        logger.info('Cleaning up stream on unmount', {
+        logger.info('Closing stream on cleanup', {
           streamId: streamIdRef.current,
         })
-        wordleAIClient.cancelStream(streamIdRef.current)
-          .catch((err) => {
-            logger.warn('Failed to cancel stream on unmount', {
+        wordleAIClient.closeStream(streamIdRef.current)
+          .catch((err: Error) => {
+            logger.warn('Failed to close stream on cleanup', {
               error: String(err),
             })
           })

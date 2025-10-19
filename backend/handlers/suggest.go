@@ -17,7 +17,7 @@ import (
 var log = logger.New()
 
 // activeStreams tracks ongoing suggestion streams by ID
-// Maps streamID -> cancel channel
+// Maps streamID -> close channel
 var (
 	activeStreams = make(map[string]chan struct{})
 	streamsMutex  sync.RWMutex
@@ -69,10 +69,10 @@ func SuggestStream(
 		"maxDepth", req.MaxDepth,
 	)
 
-	// Create cancel channel for this stream
-	cancelChan := make(chan struct{})
+	// Create close channel for this stream
+	closeChan := make(chan struct{})
 	streamsMutex.Lock()
-	activeStreams[streamID] = cancelChan
+	activeStreams[streamID] = closeChan
 	streamsMutex.Unlock()
 
 	// Cleanup on exit
@@ -80,7 +80,7 @@ func SuggestStream(
 		streamsMutex.Lock()
 		delete(activeStreams, streamID)
 		streamsMutex.Unlock()
-		close(cancelChan)
+		close(closeChan)
 	}()
 
 	// Set SSE headers
@@ -133,9 +133,9 @@ func SuggestStream(
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	// Monitor for cancellation
+	// Monitor for close signal
 	go func() {
-		<-cancelChan
+		<-closeChan
 		cancel()
 	}()
 
@@ -200,18 +200,40 @@ func SuggestStream(
 			"error", err,
 		)
 	}
+
+	// Send completion event
+	streamLog.Info("Strategy completed, waiting for close")
+	completionEvent := map[string]any{
+		"streamId": streamID,
+		"status":   "completed",
+	}
+	completionData, err := json.Marshal(completionEvent)
+	if err != nil {
+		streamLog.Error("Error marshaling completion event",
+			"error", err,
+		)
+	} else {
+		fmt.Fprintf(w, "event: stream-completed\n")
+		fmt.Fprintf(w, "data: %s\n\n",
+			string(completionData))
+		flusher.Flush()
+	}
+
+	// Keep stream open until frontend sends close event
+	<-closeChan
+	streamLog.Info("Stream closed by frontend")
 }
 
-// CancelStream handles POST /api/v1/suggest/cancel
-// Cancels an ongoing suggestion stream by ID
-func CancelStream(w http.ResponseWriter, r *http.Request) {
-	log.Info("CancelStream handler called",
+// CloseStream handles POST /api/v1/suggest/close
+// Closes an ongoing suggestion stream by ID
+func CloseStream(w http.ResponseWriter, r *http.Request) {
+	log.Info("CloseStream handler called",
 		"method", r.Method,
 		"path", r.RequestURI,
 	)
 
 	if r.Method != http.MethodPost {
-		log.Warn("Invalid method for CancelStream",
+		log.Warn("Invalid method for CloseStream",
 			"method", r.Method,
 		)
 		http.Error(w, "Method not allowed",
@@ -219,9 +241,9 @@ func CancelStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req models.CancelRequest
+	var req models.CloseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Error("Error decoding cancel request",
+		log.Error("Error decoding close request",
 			"error", err,
 		)
 		http.Error(w, "Invalid request body",
@@ -232,10 +254,10 @@ func CancelStream(w http.ResponseWriter, r *http.Request) {
 	streamID := req.StreamID
 	streamLog := log.WithStreamID(streamID)
 
-	streamLog.Info("Cancel request decoded")
+	streamLog.Info("Close request decoded")
 
 	streamsMutex.RLock()
-	cancelChan, exists := activeStreams[req.StreamID]
+	closeChan, exists := activeStreams[req.StreamID]
 	streamsMutex.RUnlock()
 
 	if !exists {
@@ -245,10 +267,10 @@ func CancelStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Signal cancellation
+	// Signal close
 	select {
-	case cancelChan <- struct{}{}:
-		streamLog.Info("Stream cancelled successfully")
+	case closeChan <- struct{}{}:
+		streamLog.Info("Stream closed successfully")
 	default:
 		// Stream already finished
 		streamLog.Debug("Stream already finished")
@@ -257,6 +279,6 @@ func CancelStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "cancelled",
+		"status": "closed",
 	})
 }

@@ -59,8 +59,8 @@ func Main() {
 		},
 	)
 	mux.HandleFunc(
-		"/api/v1/suggest/cancel",
-		handlers.CancelStream,
+		"/api/v1/suggest/close",
+		handlers.CloseStream,
 	)
 
 	// Health check endpoint

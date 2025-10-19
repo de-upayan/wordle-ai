@@ -69,9 +69,9 @@ type SuggestRequest struct {
 	MaxDepth    int           `json:"maxDepth"`
 }
 
-// CancelRequest represents a request to cancel an ongoing
+// CloseRequest represents a request to close an ongoing
 // suggestion stream
-type CancelRequest struct {
+type CloseRequest struct {
 	StreamID string `json:"streamId"`
 }
 

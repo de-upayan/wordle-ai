@@ -7,12 +7,12 @@ import (
 )
 
 // LetterColor represents the feedback color for a single letter
-type LetterColor int
+type LetterColor string
 
 const (
-	GRAY LetterColor = iota
-	YELLOW
-	GREEN
+	GRAY   LetterColor = "gray"
+	YELLOW LetterColor = "yellow"
+	GREEN  LetterColor = "green"
 )
 
 // Word is a fixed-length array of exactly 5 runes
@@ -43,6 +43,31 @@ func (w Word) String() string {
 // Contains exactly 5 letter colors, one for each position
 type Feedback struct {
 	Colors [5]LetterColor `json:"colors"`
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for Feedback
+// Handles variable-length arrays from frontend by padding with GRAY
+func (f *Feedback) UnmarshalJSON(data []byte) error {
+	type Alias Feedback
+	aux := &struct {
+		Colors []LetterColor `json:"colors"`
+	}{}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Initialize with GRAY
+	for i := 0; i < 5; i++ {
+		f.Colors[i] = GRAY
+	}
+
+	// Copy provided colors
+	for i := 0; i < len(aux.Colors) && i < 5; i++ {
+		f.Colors[i] = aux.Colors[i]
+	}
+
+	return nil
 }
 
 // GuessEntry represents a single guess with its feedback

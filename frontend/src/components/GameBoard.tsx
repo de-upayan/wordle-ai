@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { LetterTile, TileColor } from './LetterTile'
-import { Guess, PuzzleState } from '../types/index'
+import { GuessEntry, PuzzleState } from '../types/index'
 
 interface GameBoardProps {
-  guesses: Guess[]
+  guesses: GuessEntry[]
   currentRowIndex: number
   suggestion?: string
   isTyping: boolean
@@ -77,7 +77,7 @@ export function GameBoard({
           .fill(null)
           .map((_, tileIndex) => {
             const letter = displayWord[tileIndex] || ''
-            const color = (guess?.feedback[tileIndex] ||
+            const color = (guess?.feedback.colors[tileIndex] ||
               'empty') as TileColor
 
             // Show suggestion when on current row, not typing,

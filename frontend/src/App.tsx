@@ -26,9 +26,6 @@ function App() {
   )
   const [isLoadingSuggestions, setIsLoadingSuggestions] =
     useState(false)
-  const [suggestionError, setSuggestionError] = useState<
-    string | null
-  >(null)
   const [puzzleState, setPuzzleState] = useState<
     PuzzleState | null
   >(null)
@@ -49,23 +46,16 @@ function App() {
     }
   }, [isDarkMode])
 
-  // Create a stable key for constraints to avoid
+  // Create a stable key for game state to avoid
   // unnecessary stream restarts
-  const constraintsKey = JSON.stringify({
-    green: gameState.constraints.greenLetters,
-    yellow: gameState.constraints.yellowLetters,
-    gray: Array.from(
-      gameState.constraints.grayLetters
-    ).sort(),
-  })
+  const gameStateKey = JSON.stringify(gameState)
 
   // Fetch suggestions when game state changes
   useEffect(() => {
     setIsLoadingSuggestions(true)
-    setSuggestionError(null)
 
     logger.info('Fetching suggestions', {
-      guessCount: gameState.guessCount,
+      historyLength: gameState.history.length,
       maxDepth,
     })
 
@@ -74,8 +64,7 @@ function App() {
     // Start new stream
     wordleAIClient
       .streamSuggestions(
-        gameState.guessCount,
-        gameState.constraints,
+        gameState,
         maxDepth,
         (event: SuggestionsEvent) => {
           logger.debug('Received suggestions', {
@@ -93,7 +82,6 @@ function App() {
           logger.error('Suggestion stream error', {
             error: error.message,
           })
-          setSuggestionError(error.message)
           setIsLoadingSuggestions(false)
         },
         () => {
@@ -129,29 +117,17 @@ function App() {
           })
       }
     }
-  }, [gameState.guessCount, constraintsKey, maxDepth])
+  }, [gameStateKey, maxDepth])
 
   // Log game state changes
   useEffect(() => {
     logger.debug('Game state updated', {
-      guessCount: gameState.guessCount,
-      currentRowIndex: gameState.currentRowIndex,
-      guesses: gameState.guesses.map((g) => ({
-        word: g.word,
-        feedback: g.feedback,
+      historyLength: gameState.history.length,
+      history: gameState.history.map((entry) => ({
+        word: entry.word,
+        feedback: entry.feedback.colors,
       })),
     })
-
-    // Log constraints
-    if (gameState.guesses.length > 0) {
-      logger.info('Constraints updated', {
-        greenLetters: gameState.constraints.greenLetters,
-        yellowLetters: gameState.constraints.yellowLetters,
-        grayLetters: Array.from(
-          gameState.constraints.grayLetters
-        ),
-      })
-    }
   }, [gameState])
 
   const handleGuessSubmit = (word: string) => {
@@ -182,26 +158,26 @@ function App() {
   const handleTileClick = (rowIndex: number, tileIndex: number) => {
     logger.debug('Tile clicked', { rowIndex, tileIndex })
 
-    const guess = gameState.guesses[rowIndex]
-    if (!guess) {
-      logger.warn('No guess at row', { rowIndex })
+    const entry = gameState.history[rowIndex]
+    if (!entry) {
+      logger.warn('No entry at row', { rowIndex })
       return
     }
 
-    const currentColor = guess.feedback[tileIndex]
+    const currentColor = entry.feedback.colors[tileIndex]
     const newColor = cycleColor(currentColor)
 
     logger.info('Cycling tile color', {
       rowIndex,
       tileIndex,
-      letter: guess.word[tileIndex],
+      letter: entry.word[tileIndex],
       from: currentColor,
       to: newColor,
     })
 
     const updatedFeedback = [
-      ...gameState.guesses[rowIndex].feedback,
-    ]
+      ...gameState.history[rowIndex].feedback.colors,
+    ] as TileColor[]
     updatedFeedback[tileIndex] = newColor
     setFeedback(rowIndex, updatedFeedback)
 
@@ -266,8 +242,8 @@ function App() {
         {/* Game Board */}
         <div ref={boardRef}>
           <GameBoard
-            guesses={gameState.guesses}
-            currentRowIndex={gameState.currentRowIndex}
+            guesses={gameState.history}
+            currentRowIndex={gameState.history.length}
             suggestion={
               suggestion?.topSuggestion?.word || ''
             }

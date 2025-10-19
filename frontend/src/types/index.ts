@@ -1,21 +1,22 @@
-import { TileColor } from '../components/LetterTile'
+/**
+ * Letter color feedback for a single position
+ */
+export type LetterColor = 'gray' | 'yellow' | 'green'
 
 /**
- * Represents a single guess made by the user
+ * Feedback for a single 5-letter guess
+ * Contains exactly 5 letter colors, one for each position
  */
-export interface Guess {
-  word: string
-  feedback: TileColor[]
+export interface Feedback {
+  colors: LetterColor[]
 }
 
 /**
- * Constraints derived from user feedback
- * Used to filter possible words for the next suggestion
+ * A single guess with its feedback
  */
-export interface Constraints {
-  greenLetters: Record<number, string>
-  yellowLetters: Record<string, number[]>
-  grayLetters: Set<string>
+export interface GuessEntry {
+  word: string
+  feedback: Feedback
 }
 
 /**
@@ -29,13 +30,10 @@ export enum PuzzleState {
 
 /**
  * Complete game state
- * Uniquely represents the game by guess count and constraints
+ * Fully reconstructable from the history of guesses and feedback
  */
 export interface GameState {
-  guesses: Guess[]
-  constraints: Constraints
-  guessCount: number
-  currentRowIndex: number
+  history: GuessEntry[]
 }
 
 /**

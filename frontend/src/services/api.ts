@@ -1,4 +1,4 @@
-import { SuggestionsEvent, Constraints } from '../types/index'
+import { SuggestionsEvent, GameState } from '../types/index'
 import { createLogger } from '../utils/logger'
 
 const logger = createLogger('API')
@@ -27,38 +27,26 @@ export class WordleAIClient {
    * Returns a promise that resolves with the stream ID
    */
   streamSuggestions(
-    guessNumber: number,
-    constraints: Constraints,
+    gameState: GameState,
     maxDepth: number,
     onSuggestion: (event: SuggestionsEvent) => void,
     onError: (error: Error) => void,
     onComplete: () => void
   ): Promise<string> {
     logger.info('Starting suggestion stream', {
-      guessNumber,
+      historyLength: gameState.history.length,
       maxDepth,
     })
 
-    // Convert constraints to backend format
-    const grayLettersArray = Array.from(
-      constraints.grayLetters
-    )
-    const backendConstraints = {
-      greenLetters: constraints.greenLetters,
-      yellowLetters: constraints.yellowLetters,
-      grayLetters: grayLettersArray,
-    }
-
     const requestBody = {
-      guessNumber,
-      constraints: backendConstraints,
+      gameState,
       maxDepth,
     }
 
     const url = `${API_BASE_URL}/api/v1/suggest/stream`
     logger.info('Making request to backend', {
       url,
-      guessNumber,
+      historyLength: gameState.history.length,
       maxDepth,
     })
 

@@ -11,7 +11,6 @@ import (
 
 // InformationGainStrategy implements a greedy solving strategy
 // using information gain (entropy reduction) as the heuristic.
-// It uses iterative deepening to progressively improve suggestions.
 type InformationGainStrategy struct {
 	answerList []string
 	guessList  []string
@@ -25,8 +24,8 @@ func NewInformationGainStrategy() *InformationGainStrategy {
 	}
 }
 
-// Solve implements the SolvingStrategy interface using iterative
-// deepening with information gain heuristic
+// Solve implements the SolvingStrategy interface using
+// information gain heuristic
 func (igs *InformationGainStrategy) Solve(
 	ctx context.Context,
 	gameState models.GameState,
@@ -47,43 +46,30 @@ func (igs *InformationGainStrategy) Solve(
 
 	// If no possible answers, return empty suggestions
 	if len(possibleAnswers) == 0 {
-		callback([]models.SuggestionItem{}, 1, 0)
+		callback([]models.SuggestionItem{}, maxDepth, 0)
 		return nil
 	}
 
-	// Iterative deepening: progressively evaluate more guesses
-	for depth := 1; depth <= maxDepth; depth++ {
-		// Check if context was cancelled
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		// Evaluate guesses at this depth
-		suggestions := igs.evaluateGuesses(
-			possibleAnswers,
-			depth,
-		)
-
-		// Call callback with suggestions
-		if !callback(
-			suggestions,
-			depth,
-			len(possibleAnswers),
-		) {
-			break
-		}
+	// Check if context was cancelled
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
 	}
+
+	// Evaluate guesses and return top 5 suggestions
+	suggestions := igs.evaluateGuesses(possibleAnswers)
+
+	// Call callback with suggestions at maxDepth
+	callback(suggestions, maxDepth, len(possibleAnswers))
 
 	return nil
 }
 
-// evaluateGuesses evaluates candidate guesses and returns top
+// evaluateGuesses evaluates candidate guesses and returns top 5
 // suggestions sorted by information gain
 func (igs *InformationGainStrategy) evaluateGuesses(
 	possibleAnswers []models.Word,
-	depth int,
 ) []models.SuggestionItem {
 	// Special case: only one possible answer left
 	// Return it with max float score (guaranteed solution)
@@ -103,17 +89,8 @@ func (igs *InformationGainStrategy) evaluateGuesses(
 
 	var guesses []guessScore
 
-	// Limit evaluation based on depth for performance
-	// Depth 1: evaluate all guesses
-	// Depth 2+: evaluate top candidates more thoroughly
-	evaluationSet := igs.guessList
-	if depth > 1 && len(igs.guessList) > 5000 {
-		// For deeper searches, focus on promising guesses
-		evaluationSet = igs.guessList[:5000]
-	}
-
 	// Calculate information gain for each candidate guess
-	for _, guess := range evaluationSet {
+	for _, guess := range igs.guessList {
 		gain := igs.calculateInformationGain(
 			guess,
 			possibleAnswers,

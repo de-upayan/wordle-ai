@@ -11,7 +11,7 @@ import (
 func TestInformationGainStrategyCreation(t *testing.T) {
 	strategy := NewInformationGainStrategy()
 	if strategy == nil {
-		t.Error("Expected non-nil strategy")
+		t.Fatal("Expected non-nil strategy")
 	}
 	if len(strategy.answerList) == 0 {
 		t.Error("Expected non-empty answer list")
@@ -106,7 +106,7 @@ func TestEvaluateGuessesReturnsTopFive(t *testing.T) {
 		models.StringToWord("STALE"),
 	}
 
-	suggestions := strategy.evaluateGuesses(possibleAnswers, 1)
+	suggestions := strategy.evaluateGuesses(possibleAnswers)
 
 	if len(suggestions) > 5 {
 		t.Errorf("Expected at most 5 suggestions, got %d",
@@ -129,7 +129,7 @@ func TestEvaluateGuessesWithSingleAnswer(t *testing.T) {
 		models.StringToWord("SLATE"),
 	}
 
-	suggestions := strategy.evaluateGuesses(possibleAnswers, 1)
+	suggestions := strategy.evaluateGuesses(possibleAnswers)
 
 	// Should return exactly one suggestion
 	if len(suggestions) != 1 {
@@ -179,8 +179,8 @@ func TestSolveWithNoConstraints(t *testing.T) {
 		t.Errorf("Expected no error, got %v", err)
 	}
 
-	if callCount != 3 {
-		t.Errorf("Expected 3 callbacks, got %d", callCount)
+	if callCount != 1 {
+		t.Errorf("Expected 1 callback, got %d", callCount)
 	}
 
 	if lastDepth != 3 {
@@ -322,7 +322,7 @@ func TestInformationGainVsTestStrategy(t *testing.T) {
 		return true
 	}
 
-	err := igStrategy.Solve(ctx, gameState, 2, igCallback)
+	err := igStrategy.Solve(ctx, gameState, 1, igCallback)
 	if err != nil {
 		t.Errorf("IG: Expected no error, got %v", err)
 	}
@@ -341,7 +341,7 @@ func TestInformationGainVsTestStrategy(t *testing.T) {
 		return true
 	}
 
-	err = testStrategy.Solve(ctx, gameState, 2, testCallback)
+	err = testStrategy.Solve(ctx, gameState, 1, testCallback)
 	if err != nil {
 		t.Errorf("Test: Expected no error, got %v", err)
 	}

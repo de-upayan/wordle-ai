@@ -34,6 +34,7 @@ function App() {
   >(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const streamIdRef = useRef<string | null>(null)
+  const activeStreamIdRef = useRef<string | null>(null)
   const { gameState, addGuess, setFeedback } = useGameState()
 
   useEffect(() => {
@@ -80,6 +81,15 @@ function App() {
         gameState.constraints,
         maxDepth,
         (event: SuggestionsEvent) => {
+          // Ignore callbacks from old streams
+          if (event.streamId !== activeStreamIdRef.current) {
+            logger.debug('Ignoring event from old stream', {
+              eventStreamId: event.streamId,
+              activeStreamId: activeStreamIdRef.current,
+            })
+            return
+          }
+
           logger.debug('Received suggestions', {
             depth: event.depth,
             count: event.suggestions.length,
@@ -108,6 +118,7 @@ function App() {
           streamId,
         })
         streamIdRef.current = streamId
+        activeStreamIdRef.current = streamId
       })
       .catch((err) => {
         logger.error('Failed to start stream', {

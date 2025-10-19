@@ -61,8 +61,8 @@ func SuggestStream(
 	// Generate unique stream ID
 	streamID := uuid.New().String()
 
-	// Create logger with streamID context
-	streamLog := log.WithStreamID(streamID)
+	// Create logger with streamID tag
+	streamLog := log.WithTag(streamID)
 
 	streamLog.Info("Request decoded successfully",
 		"guessNumber", req.GuessNumber,
@@ -252,7 +252,7 @@ func CloseStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	streamID := req.StreamID
-	streamLog := log.WithStreamID(streamID)
+	streamLog := log.WithTag(streamID)
 
 	streamLog.Info("Close request decoded")
 

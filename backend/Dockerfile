@@ -28,6 +28,9 @@ COPY --from=builder /app/main .
 # Copy data files
 COPY --from=builder /app/data ./data
 
+# Create logs directory structure
+RUN mkdir -p ./logs/main && chmod 755 ./logs ./logs/main
+
 # Expose port
 EXPOSE 8080
 

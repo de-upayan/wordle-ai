@@ -33,10 +33,16 @@ func (igs *InformationGainStrategy) Solve(
 	maxDepth int,
 	callback SuggestionCallback,
 ) error {
-	// Get possible answers based on current constraints
+	// Convert answer list to Word type
+	answerWords := make([]models.Word, len(igs.answerList))
+	for i, word := range igs.answerList {
+		answerWords[i] = models.StringToWord(word)
+	}
+
+	// Get possible answers based on game state
 	possibleAnswers := FilterCandidateWords(
-		gameState.Constraints,
-		igs.answerList,
+		gameState,
+		answerWords,
 	)
 
 	// If no possible answers, return empty suggestions
@@ -76,7 +82,7 @@ func (igs *InformationGainStrategy) Solve(
 // evaluateGuesses evaluates candidate guesses and returns top
 // suggestions sorted by information gain
 func (igs *InformationGainStrategy) evaluateGuesses(
-	possibleAnswers []string,
+	possibleAnswers []models.Word,
 	depth int,
 ) []models.SuggestionItem {
 	// Special case: only one possible answer left
@@ -84,7 +90,7 @@ func (igs *InformationGainStrategy) evaluateGuesses(
 	if len(possibleAnswers) == 1 {
 		return []models.SuggestionItem{
 			{
-				Word:  possibleAnswers[0],
+				Word:  possibleAnswers[0].String(),
 				Score: math.MaxFloat64,
 			},
 		}
@@ -140,7 +146,7 @@ func (igs *InformationGainStrategy) evaluateGuesses(
 // possible answers
 func (igs *InformationGainStrategy) calculateInformationGain(
 	guess string,
-	possibleAnswers []string,
+	possibleAnswers []models.Word,
 ) float64 {
 	if len(possibleAnswers) == 0 {
 		return 0
@@ -151,11 +157,16 @@ func (igs *InformationGainStrategy) calculateInformationGain(
 		len(possibleAnswers),
 	)
 
+	// Convert guess to Word type
+	guessWord := models.StringToWord(guess)
+
 	// Partition answers by feedback pattern
 	feedbackPartitions := make(map[string]int)
 	for _, answer := range possibleAnswers {
-		feedback := GetFeedback(answer, guess)
-		feedbackPartitions[feedback]++
+		feedback := GetFeedback(answer, guessWord)
+		// Convert feedback to string for map key
+		feedbackKey := feedbackToString(feedback)
+		feedbackPartitions[feedbackKey]++
 	}
 
 	// Calculate expected entropy after the guess
@@ -171,6 +182,23 @@ func (igs *InformationGainStrategy) calculateInformationGain(
 
 	// Information gain = reduction in entropy
 	return currentEntropy - expectedEntropy
+}
+
+// feedbackToString converts a Feedback struct to a string
+// for use as a map key
+func feedbackToString(fb models.Feedback) string {
+	s := make([]byte, 5)
+	for i, color := range fb.Colors {
+		switch color {
+		case models.GREEN:
+			s[i] = 'G'
+		case models.YELLOW:
+			s[i] = 'Y'
+		case models.GRAY:
+			s[i] = 'B'
+		}
+	}
+	return string(s)
 }
 
 // calculateEntropy calculates Shannon entropy for a set of

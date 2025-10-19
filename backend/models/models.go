@@ -2,71 +2,97 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 )
 
-// GameState represents the canonical state of a Wordle game
-// Independent of the sequence of guesses that led to it
-type GameState struct {
-	// GuessNumber: how many guesses have been made (0-6)
-	// Used to track progress and determine game end conditions
-	GuessNumber int
+// LetterColor represents the feedback color for a single letter
+type LetterColor int
 
-	// Constraints: all letter constraints derived from feedback
-	// Uniquely identifies which words are still possible
-	Constraints ConstraintMap
+const (
+	GRAY LetterColor = iota
+	YELLOW
+	GREEN
+)
+
+// Word is a fixed-length array of exactly 5 runes
+// Enforces compile-time length validation for Wordle words
+type Word [5]rune
+
+// StringToWord converts a string to a Word type
+// Panics if the string is not exactly 5 characters
+func StringToWord(s string) Word {
+	runes := []rune(strings.ToUpper(s))
+	if len(runes) != 5 {
+		panic(fmt.Sprintf(
+			"Word must be exactly 5 characters, got %d",
+			len(runes),
+		))
+	}
+	var w Word
+	copy(w[:], runes)
+	return w
 }
 
-// ConstraintMap represents all letter constraints from feedback
-// Derived from the sequence of guesses and their feedback
-type ConstraintMap struct {
-	// GreenLetters: map[position] -> letter
-	// Letters that are in the correct position
-	// Example: position 1 must be 'L', position 2 must be 'I'
-	// Constraint: word[pos] == letter
-	GreenLetters map[int]string
-
-	// YellowLetters: map[letter] -> []forbidden_positions
-	// Letters that are in the word but at wrong positions
-	// Example: 'A' is in word but NOT at positions [2, 3]
-	// Constraint: word contains letter AND word[pos] != letter
-	YellowLetters map[string][]int
-
-	// GrayLetters: set of excluded letters (using map[string]struct{})
-	// Letters that are NOT in the word at all
-	// Example: {'S', 'T', 'E', 'C', 'G'}
-	// Constraint: word does not contain any gray letter
-	GrayLetters map[string]struct{}
+// String converts a Word to a string
+func (w Word) String() string {
+	return string(w[:])
 }
 
-// UnmarshalJSON handles custom JSON unmarshaling for ConstraintMap
-// Converts grayLetters array to map[string]struct{}
-func (cm *ConstraintMap) UnmarshalJSON(data []byte) error {
-	type Alias ConstraintMap
-	aux := &struct {
-		GrayLetters []string `json:"grayLetters"`
+// Feedback represents feedback for a single 5-letter guess
+// Contains exactly 5 letter colors, one for each position
+type Feedback struct {
+	Colors [5]LetterColor `json:"colors"`
+}
+
+// GuessEntry represents a single guess with its feedback
+type GuessEntry struct {
+	Guess    Word     `json:"guess"`
+	Feedback Feedback `json:"feedback"`
+}
+
+// MarshalJSON implements custom JSON marshaling for GuessEntry
+func (ge GuessEntry) MarshalJSON() ([]byte, error) {
+	type Alias GuessEntry
+	return json.Marshal(&struct {
+		Word string `json:"word"`
 		*Alias
 	}{
-		Alias: (*Alias)(cm),
+		Word:  ge.Guess.String(),
+		Alias: (*Alias)(&ge),
+	})
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for GuessEntry
+func (ge *GuessEntry) UnmarshalJSON(data []byte) error {
+	type Alias GuessEntry
+	aux := &struct {
+		Word string `json:"word"`
+		*Alias
+	}{
+		Alias: (*Alias)(ge),
 	}
 
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
-	// Convert grayLetters array to map
-	cm.GrayLetters = make(map[string]struct{})
-	for _, letter := range aux.GrayLetters {
-		cm.GrayLetters[letter] = struct{}{}
-	}
-
+	ge.Guess = StringToWord(aux.Word)
 	return nil
+}
+
+// GameState represents the canonical state of a Wordle game
+// Fully reconstructable from the history of guesses and feedback
+type GameState struct {
+	// History: array of guess-feedback pairs
+	// Uniquely identifies the game state
+	History []GuessEntry `json:"history"`
 }
 
 // SuggestRequest represents the incoming request to the suggest endpoint
 type SuggestRequest struct {
-	GuessNumber int           `json:"guessNumber"`
-	Constraints ConstraintMap `json:"constraints"`
-	MaxDepth    int           `json:"maxDepth"`
+	GameState GameState `json:"gameState"`
+	MaxDepth  int       `json:"maxDepth"`
 }
 
 // CloseRequest represents a request to close an ongoing

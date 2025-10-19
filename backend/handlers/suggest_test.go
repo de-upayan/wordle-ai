@@ -39,59 +39,61 @@ func TestSuggestStreamInvalidJSON(t *testing.T) {
 
 func TestSuggestStreamValidRequest(t *testing.T) {
 	reqData := models.SuggestRequest{
-		GuessNumber: 2,
-		Constraints: models.ConstraintMap{
-			GreenLetters: map[int]string{
-				1: "L",
-				2: "I",
-			},
-			YellowLetters: map[string][]int{
-				"A": {2},
-				"N": {3},
-			},
-			GrayLetters: map[string]struct{}{
-				"S": {},
-				"T": {},
-				"E": {},
-				"C": {},
-				"G": {},
+		GameState: models.GameState{
+			History: []models.GuessEntry{
+				{
+					Guess: models.StringToWord("SLATE"),
+					Feedback: models.Feedback{
+						Colors: [5]models.LetterColor{
+							models.GREEN, models.YELLOW,
+							models.GRAY, models.GRAY,
+							models.GRAY,
+						},
+					},
+				},
 			},
 		},
 		MaxDepth: 3,
 	}
 
 	body, _ := json.Marshal(reqData)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/suggest/stream", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost,
+		"/api/v1/suggest/stream",
+		bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	strategy := strategies.NewTestStrategy()
 
 	SuggestStream(w, req, strategy)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+		t.Errorf("Expected status %d, got %d",
+			http.StatusOK, w.Code)
 	}
 
 	// Check headers
-	if w.Header().Get("Content-Type") != "text/event-stream" {
-		t.Errorf("Expected Content-Type text/event-stream, got %s", w.Header().Get("Content-Type"))
+	if w.Header().Get("Content-Type") !=
+		"text/event-stream" {
+		t.Errorf(
+			"Expected Content-Type text/event-stream, "+
+				"got %s",
+			w.Header().Get("Content-Type"))
 	}
 
 	if w.Header().Get("Cache-Control") != "no-cache" {
-		t.Errorf("Expected Cache-Control no-cache, got %s", w.Header().Get("Cache-Control"))
+		t.Errorf("Expected Cache-Control no-cache, got %s",
+			w.Header().Get("Cache-Control"))
 	}
 
 	if w.Header().Get("Connection") != "keep-alive" {
-		t.Errorf("Expected Connection keep-alive, got %s", w.Header().Get("Connection"))
+		t.Errorf("Expected Connection keep-alive, got %s",
+			w.Header().Get("Connection"))
 	}
 }
 
 func TestSuggestStreamSSEFormat(t *testing.T) {
 	reqData := models.SuggestRequest{
-		GuessNumber: 1,
-		Constraints: models.ConstraintMap{
-			GreenLetters:  make(map[int]string),
-			YellowLetters: make(map[string][]int),
-			GrayLetters:   make(map[string]struct{}),
+		GameState: models.GameState{
+			History: []models.GuessEntry{},
 		},
 		MaxDepth: 2,
 	}
@@ -124,8 +126,12 @@ func TestSuggestStreamSSEFormat(t *testing.T) {
 			jsonStr := strings.TrimPrefix(line, "data: ")
 			if jsonStr != "" {
 				var data map[string]interface{}
-				if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
-					t.Errorf("Invalid JSON in data line: %s, error: %v", jsonStr, err)
+				if err := json.Unmarshal(
+					[]byte(jsonStr), &data); err != nil {
+					t.Errorf(
+						"Invalid JSON in data line: "+
+							"%s, error: %v",
+						jsonStr, err)
 				}
 			}
 		}
@@ -134,11 +140,8 @@ func TestSuggestStreamSSEFormat(t *testing.T) {
 
 func TestSuggestStreamEventContent(t *testing.T) {
 	reqData := models.SuggestRequest{
-		GuessNumber: 1,
-		Constraints: models.ConstraintMap{
-			GreenLetters:  make(map[int]string),
-			YellowLetters: make(map[string][]int),
-			GrayLetters:   make(map[string]struct{}),
+		GameState: models.GameState{
+			History: []models.GuessEntry{},
 		},
 		MaxDepth: 1,
 	}
@@ -179,9 +182,14 @@ func TestSuggestStreamEventContent(t *testing.T) {
 		t.Error("Response missing streamId")
 	}
 
-	// Check for done flag
-	if !strings.Contains(response, "\"done\":true") {
-		t.Error("Response missing done flag set to true")
+	// Check for completion event
+	if !strings.Contains(response, "event: stream-completed") {
+		t.Error("Response missing stream-completed event")
+	}
+
+	// Check for status completed
+	if !strings.Contains(response, "\"status\":\"completed\"") {
+		t.Error("Response missing status completed")
 	}
 }
 

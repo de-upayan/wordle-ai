@@ -5,20 +5,16 @@ import (
 )
 
 // FilterCandidateWords filters the word list based on the
-// constraint map. Returns only words that satisfy all constraints:
-//   - Green letters must be at exact positions
-//   - Yellow letters must be in word but not at forbidden
-//     positions
-//   - Gray letters must not appear in word (unless they're
-//     already green or yellow)
+// game state history. Returns only words that satisfy all
+// feedback constraints from previous guesses.
 func FilterCandidateWords(
-	constraints models.ConstraintMap,
-	wordList []string,
-) []string {
-	var result []string
+	gameState models.GameState,
+	wordList []models.Word,
+) []models.Word {
+	var result []models.Word
 
 	for _, word := range wordList {
-		if matchesConstraints(word, constraints) {
+		if matchesGameState(word, gameState) {
 			result = append(result, word)
 		}
 	}
@@ -26,70 +22,86 @@ func FilterCandidateWords(
 	return result
 }
 
-// matchesConstraints checks if a word satisfies all constraints
-// using minimum and maximum letter count logic
-func matchesConstraints(
-	word string,
-	constraints models.ConstraintMap,
+// matchesGameState checks if a word matches all feedback
+// from the game state history.
+func matchesGameState(
+	word models.Word,
+	gameState models.GameState,
 ) bool {
-	// Step 1: Calculate minimum required counts for each letter
-	// based on Green and Yellow constraints
-	minRequiredCounts := make(map[string]int)
+	// Check that word matches feedback for each guess
+	for _, entry := range gameState.History {
+		if !matchesFeedback(word, entry) {
+			return false
+		}
+	}
+	return true
+}
 
-	// Add counts from Green letters
-	for _, letter := range constraints.GreenLetters {
-		minRequiredCounts[letter]++
+// countLetterInWord counts occurrences of a rune in a Word
+func countLetterInWord(word models.Word, letter rune) int {
+	count := 0
+	for i := 0; i < 5; i++ {
+		if word[i] == letter {
+			count++
+		}
+	}
+	return count
+}
+
+// matchesFeedback checks if a word matches the feedback
+// for a single guess-feedback pair. Implements correct logic
+// for minimum and maximum letter count constraints.
+func matchesFeedback(
+	word models.Word,
+	entry models.GuessEntry,
+) bool {
+	guess := entry.Guess
+	feedback := entry.Feedback
+
+	// 1. Pre-calculate minimum required counts for this
+	// guess (letters that appeared green/yellow)
+	minRequiredCounts := make(map[rune]int)
+	for i := 0; i < 5; i++ {
+		if feedback.Colors[i] == models.GREEN ||
+			feedback.Colors[i] == models.YELLOW {
+			minRequiredCounts[guess[i]]++
+		}
 	}
 
-	// Add counts from Yellow letters
-	for letter := range constraints.YellowLetters {
-		minRequiredCounts[letter]++
+	// 2. Check Green Letters (exact position matches)
+	for i := 0; i < 5; i++ {
+		if feedback.Colors[i] == models.GREEN {
+			if word[i] != guess[i] {
+				return false
+			}
+		}
 	}
 
-	// Step 2: Check Green Letters (exact position matches)
-	for pos, letter := range constraints.GreenLetters {
-		if pos >= len(word) || string(word[pos]) != letter {
+	// 3. Check Yellow Letters (must not be at forbidden
+	// positions)
+	for i := 0; i < 5; i++ {
+		if feedback.Colors[i] == models.YELLOW {
+			if word[i] == guess[i] {
+				return false
+			}
+		}
+	}
+
+	// 4. Check minimum required counts
+	for letter, minCount := range minRequiredCounts {
+		if countLetterInWord(word, letter) < minCount {
 			return false
 		}
 	}
 
-	// Step 3: Check Yellow Letters (must be present and not
-	// at forbidden positions)
-	for letter, forbiddenPositions := range constraints.YellowLetters {
-		// Check not at forbidden positions
-		for _, pos := range forbiddenPositions {
-			if pos < len(word) &&
-				string(word[pos]) == letter {
-				return false
-			}
-		}
-
-		// Check minimum required count
-		requiredCount := minRequiredCounts[letter]
-		actualCount := countLetter(word, letter)
-		if actualCount < requiredCount {
-			return false
-		}
-	}
-
-	// Step 4: Check Gray Letters (enforce maximum count)
-	// Gray tiles indicate either:
-	// A) Letter doesn't exist in word (if not in green/yellow)
-	// B) Letter exists exactly N times (if in green/yellow)
-	for grayLetter := range constraints.GrayLetters {
-		requiredCount, isConfirmed := minRequiredCounts[grayLetter]
-
-		if !isConfirmed {
-			// Letter is ONLY gray (never appeared green/yellow)
-			// It must not appear in word at all
-			if countLetter(word, grayLetter) > 0 {
-				return false
-			}
-		} else {
-			// Letter appeared as gray AND green/yellow
-			// It must appear exactly requiredCount times
-			actualCount := countLetter(word, grayLetter)
-			if actualCount > requiredCount {
+	// 5. Check Gray Letters (enforce maximum count)
+	// If letter appeared green/yellow, max count is
+	// minRequiredCounts[letter]. If only gray, max is 0.
+	for i := 0; i < 5; i++ {
+		if feedback.Colors[i] == models.GRAY {
+			letter := guess[i]
+			if countLetterInWord(word, letter) >
+				minRequiredCounts[letter] {
 				return false
 			}
 		}
@@ -98,29 +110,14 @@ func matchesConstraints(
 	return true
 }
 
-// countLetter counts occurrences of a letter in a word
-func countLetter(word, letter string) int {
-	count := 0
-	for _, ch := range word {
-		if string(ch) == letter {
-			count++
-		}
-	}
-	return count
-}
-
 // GetFeedback calculates Wordle feedback for a guess against
-// an answer. Returns a feedback string where:
-// - 'G' = Green (correct letter in correct position)
-// - 'Y' = Yellow (correct letter in wrong position)
-// - 'B' = Black (letter not in answer)
-// Both answer and guess should be uppercase 5-letter words.
-func GetFeedback(answer, guess string) string {
-	if len(answer) != 5 || len(guess) != 5 {
-		return ""
-	}
-
-	feedback := make([]byte, 5)
+// an answer. Returns a Feedback struct with colors for each
+// position:
+// - GREEN = correct letter in correct position
+// - YELLOW = correct letter in wrong position
+// - GRAY = letter not in answer
+func GetFeedback(answer, guess models.Word) models.Feedback {
+	feedback := models.Feedback{}
 	answerLetters := make(map[rune]int)
 
 	// Count available letters in answer
@@ -130,26 +127,26 @@ func GetFeedback(answer, guess string) string {
 
 	// First pass: mark greens and remove from available
 	for i := 0; i < 5; i++ {
-		if guess[i] == answer[i] {
-			feedback[i] = 'G'
-			answerLetters[rune(guess[i])]--
+		if answer[i] == guess[i] {
+			feedback.Colors[i] = models.GREEN
+			answerLetters[rune(answer[i])]--
 		}
 	}
 
 	// Second pass: mark yellows and grays
 	for i := 0; i < 5; i++ {
-		if feedback[i] == 'G' {
+		if feedback.Colors[i] == models.GREEN {
 			continue
 		}
 
 		guessLetter := rune(guess[i])
 		if answerLetters[guessLetter] > 0 {
-			feedback[i] = 'Y'
+			feedback.Colors[i] = models.YELLOW
 			answerLetters[guessLetter]--
 		} else {
-			feedback[i] = 'B'
+			feedback.Colors[i] = models.GRAY
 		}
 	}
 
-	return string(feedback)
+	return feedback
 }

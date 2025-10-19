@@ -66,7 +66,7 @@ func SuggestStream(
 	streamLog := log.WithTag(streamID)
 
 	streamLog.Info("Request decoded successfully",
-		"guessNumber", req.GuessNumber,
+		"historyLength", len(req.GameState.History),
 		"maxDepth", req.MaxDepth,
 	)
 
@@ -121,14 +121,8 @@ func SuggestStream(
 	fmt.Fprintf(w, "data: %s\n\n", string(data))
 	flusher.Flush()
 
-	// TODO(de-upayan): Implement word filtering based on
-	// constraints (greenLetters, yellowLetters, grayLetters)
-
-	// Create game state from request
-	gameState := models.GameState{
-		GuessNumber: req.GuessNumber,
-		Constraints: req.Constraints,
-	}
+	// Use game state from request
+	gameState := req.GameState
 
 	// Create context that can be cancelled
 	ctx, cancel := context.WithCancel(r.Context())

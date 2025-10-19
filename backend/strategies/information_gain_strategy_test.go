@@ -50,8 +50,11 @@ func TestCalculateInformationGain(t *testing.T) {
 	strategy := NewInformationGainStrategy()
 
 	// Test with a small set of possible answers
-	possibleAnswers := []string{
-		"SLATE", "SLANT", "SLING", "PLANT",
+	possibleAnswers := []models.Word{
+		models.StringToWord("SLATE"),
+		models.StringToWord("SLANT"),
+		models.StringToWord("SLING"),
+		models.StringToWord("PLANT"),
 	}
 
 	// A guess that partitions well should have high gain
@@ -79,7 +82,7 @@ func TestInformationGainZeroAnswers(t *testing.T) {
 
 	gain := strategy.calculateInformationGain(
 		"STARE",
-		[]string{},
+		[]models.Word{},
 	)
 
 	if gain != 0 {
@@ -91,9 +94,16 @@ func TestInformationGainZeroAnswers(t *testing.T) {
 func TestEvaluateGuessesReturnsTopFive(t *testing.T) {
 	strategy := NewInformationGainStrategy()
 
-	possibleAnswers := []string{
-		"SLATE", "SLANT", "SLING", "PLANT", "SLEET",
-		"SLEEP", "SLEEK", "SLEET", "STEAL", "STALE",
+	possibleAnswers := []models.Word{
+		models.StringToWord("SLATE"),
+		models.StringToWord("SLANT"),
+		models.StringToWord("SLING"),
+		models.StringToWord("PLANT"),
+		models.StringToWord("SLEET"),
+		models.StringToWord("SLEEP"),
+		models.StringToWord("SLEEK"),
+		models.StringToWord("STEAL"),
+		models.StringToWord("STALE"),
 	}
 
 	suggestions := strategy.evaluateGuesses(possibleAnswers, 1)
@@ -115,7 +125,9 @@ func TestEvaluateGuessesReturnsTopFive(t *testing.T) {
 func TestEvaluateGuessesWithSingleAnswer(t *testing.T) {
 	strategy := NewInformationGainStrategy()
 
-	possibleAnswers := []string{"SLATE"}
+	possibleAnswers := []models.Word{
+		models.StringToWord("SLATE"),
+	}
 
 	suggestions := strategy.evaluateGuesses(possibleAnswers, 1)
 
@@ -142,12 +154,7 @@ func TestSolveWithNoConstraints(t *testing.T) {
 	strategy := NewInformationGainStrategy()
 
 	gameState := models.GameState{
-		GuessNumber: 0,
-		Constraints: models.ConstraintMap{
-			GreenLetters:  make(map[int]string),
-			YellowLetters: make(map[string][]int),
-			GrayLetters:   make(map[string]struct{}),
-		},
+		History: []models.GuessEntry{},
 	}
 
 	ctx := context.Background()
@@ -185,12 +192,7 @@ func TestSolveContextCancellation(t *testing.T) {
 	strategy := NewInformationGainStrategy()
 
 	gameState := models.GameState{
-		GuessNumber: 0,
-		Constraints: models.ConstraintMap{
-			GreenLetters:  make(map[int]string),
-			YellowLetters: make(map[string][]int),
-			GrayLetters:   make(map[string]struct{}),
-		},
+		History: []models.GuessEntry{},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -214,12 +216,7 @@ func TestSolveCallbackStopsSearch(t *testing.T) {
 	strategy := NewInformationGainStrategy()
 
 	gameState := models.GameState{
-		GuessNumber: 0,
-		Constraints: models.ConstraintMap{
-			GreenLetters:  make(map[int]string),
-			YellowLetters: make(map[string][]int),
-			GrayLetters:   make(map[string]struct{}),
-		},
+		History: []models.GuessEntry{},
 	}
 
 	ctx := context.Background()
@@ -249,11 +246,17 @@ func TestSolveWithConstraints(t *testing.T) {
 	strategy := NewInformationGainStrategy()
 
 	gameState := models.GameState{
-		GuessNumber: 1,
-		Constraints: models.ConstraintMap{
-			GreenLetters:  map[int]string{0: "S"},
-			YellowLetters: make(map[string][]int),
-			GrayLetters:   make(map[string]struct{}),
+		History: []models.GuessEntry{
+			{
+				Guess: models.StringToWord("STARE"),
+				Feedback: models.Feedback{
+					Colors: [5]models.LetterColor{
+						models.GREEN, models.GRAY,
+						models.GRAY, models.GRAY,
+						models.GRAY,
+					},
+				},
+			},
 		},
 	}
 
@@ -300,12 +303,7 @@ func TestInformationGainVsTestStrategy(t *testing.T) {
 	testStrategy := NewTestStrategy()
 
 	gameState := models.GameState{
-		GuessNumber: 0,
-		Constraints: models.ConstraintMap{
-			GreenLetters:  make(map[int]string),
-			YellowLetters: make(map[string][]int),
-			GrayLetters:   make(map[string]struct{}),
-		},
+		History: []models.GuessEntry{},
 	}
 
 	ctx := context.Background()

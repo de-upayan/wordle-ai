@@ -13,9 +13,6 @@ interface SuggestionPanelProps {
   isLoading?: boolean
   error?: string
   isDarkMode?: boolean
-  maxDepth?: number
-  currentDepth?: number
-  onMaxDepthChange?: (depth: number) => void
   boardHeight?: number
   onPuzzleStateChange?: (state: PuzzleState | null) => void
 }
@@ -94,27 +91,9 @@ export function SuggestionPanel({
   isLoading = false,
   error,
   isDarkMode = false,
-  maxDepth = 10,
-  currentDepth = 0,
-  onMaxDepthChange,
   boardHeight = 0,
   onPuzzleStateChange,
 }: SuggestionPanelProps) {
-  const [localMaxDepth, setLocalMaxDepth] = useState(
-    maxDepth
-  )
-
-  const handleDepthChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const newDepth = parseInt(e.target.value, 10)
-    setLocalMaxDepth(newDepth)
-    onMaxDepthChange?.(newDepth)
-  }
-
-  const depthPercentage = maxDepth > 0
-    ? (currentDepth / maxDepth) * 100
-    : 0
 
   const puzzleState = suggestion
     ? getPuzzleState(suggestion.remainingAnswers)
@@ -136,83 +115,7 @@ export function SuggestionPanel({
         height: boardHeight > 0 ? `${boardHeight}px` : 'auto',
       }}
     >
-      {/* Max Depth Slider */}
-      <div className="mb-2">
-        <div className="flex justify-between items-center
-          mb-1">
-          <label
-            className={`text-xs font-semibold ${
-              isDarkMode
-                ? 'text-gray-300'
-                : 'text-gray-700'
-            }`}
-          >
-            Max Depth
-          </label>
-          <span
-            className={`text-xs font-bold ${
-              isDarkMode
-                ? 'text-blue-400'
-                : 'text-blue-600'
-            }`}
-          >
-            {localMaxDepth}
-          </span>
-        </div>
-        <input
-          type="range"
-          min="1"
-          max="20"
-          value={localMaxDepth}
-          onChange={handleDepthChange}
-          className="w-full h-2 rounded-lg appearance-none
-            cursor-pointer"
-          style={{
-            background: `linear-gradient(to right,
-              #3b82f6 0%,
-              #3b82f6 ${(localMaxDepth / 20) * 100}%,
-              ${isDarkMode ? '#374151' : '#d1d5db'}
-              ${(localMaxDepth / 20) * 100}%,
-              ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`,
-          }}
-        />
-      </div>
 
-      {/* Current Depth Progress Bar */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center
-          mb-1">
-          <label
-            className={`text-xs font-semibold ${
-              isDarkMode
-                ? 'text-gray-300'
-                : 'text-gray-700'
-            }`}
-          >
-            Current Depth
-          </label>
-          <span
-            className={`text-xs font-bold ${
-              isDarkMode
-                ? 'text-green-400'
-                : 'text-green-600'
-            }`}
-          >
-            {currentDepth} / {maxDepth}
-          </span>
-        </div>
-        <div
-          className={`w-full h-2 rounded-full overflow-hidden
-            mt-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`}
-        >
-          <div
-            className="h-full bg-gradient-to-r
-              from-green-400 to-green-600 transition-all
-              duration-300"
-            style={{ width: `${depthPercentage}%` }}
-          ></div>
-        </div>
-      </div>
 
       {error && (
         <div

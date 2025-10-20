@@ -4,10 +4,10 @@ import { SuggestionPanel } from './components/SuggestionPanel'
 import { InstructionPanel } from './components/InstructionPanel'
 import { TileColor } from './components/LetterTile'
 import { useGameState } from './hooks/useGameState'
+import { useWordlists } from './hooks/useWordlists'
 import { createLogger } from './utils/logger'
-import { wordleAIClient } from './services/api'
+import { wordleSolverService } from './services/wordleSolverService'
 import {
-  SuggestionsEvent,
   Suggestion,
   PuzzleState,
 } from './types/index'
@@ -18,19 +18,18 @@ function App() {
   const [isTyping, setIsTyping] = useState(false)
   const [typedWord, setTypedWord] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
-  const [maxDepth, setMaxDepth] = useState(10)
-  const [currentDepth, setCurrentDepth] = useState(0)
   const [boardHeight, setBoardHeight] = useState(0)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(
     null
   )
-  const [isLoadingSuggestions, setIsLoadingSuggestions] =
-    useState(false)
+  const [isComputing, setIsComputing] = useState(false)
   const [puzzleState, setPuzzleState] = useState<
     PuzzleState | null
   >(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const { gameState, addGuess, setFeedback } = useGameState()
+  const { answersList, guessesList, isLoaded: wordlistsLoaded } =
+    useWordlists()
 
   useEffect(() => {
     if (boardRef.current) {
@@ -46,78 +45,58 @@ function App() {
     }
   }, [isDarkMode])
 
-  // Create a stable key for game state to avoid
-  // unnecessary stream restarts
-  const gameStateKey = JSON.stringify(gameState)
-
-  // Fetch suggestions when game state changes
+  // Initialize solver service when wordlists are loaded
   useEffect(() => {
-    setIsLoadingSuggestions(true)
+    if (wordlistsLoaded && answersList.length > 0 && guessesList.length > 0) {
+      logger.info('Initializing solver service', {
+        answersCount: answersList.length,
+        guessesCount: guessesList.length,
+      })
+      wordleSolverService.initialize(answersList, guessesList)
+        .catch((err) => {
+          logger.error('Failed to initialize solver service', {
+            error: String(err),
+          })
+        })
+    }
+  }, [wordlistsLoaded, answersList, guessesList])
 
-    logger.info('Fetching suggestions', {
+  // Compute suggestions when game state changes
+  useEffect(() => {
+    if (!wordlistsLoaded) {
+      logger.debug('Wordlists not loaded yet, skipping computation')
+      return
+    }
+
+    setIsComputing(true)
+
+    logger.info('Computing suggestions', {
       historyLength: gameState.history.length,
-      maxDepth,
     })
 
-    let currentStreamId: string | null = null
-
-    // Start new stream
-    wordleAIClient
-      .streamSuggestions(
-        gameState,
-        maxDepth,
-        (event: SuggestionsEvent) => {
-          logger.debug('Received suggestions', {
-            depth: event.depth,
-            count: event.suggestions.length,
-          })
-          setCurrentDepth(event.depth)
-          setSuggestion({
-            suggestions: event.suggestions,
-            topSuggestion: event.topSuggestion,
-            remainingAnswers: event.remainingAnswers,
-          })
-        },
-        (error: Error) => {
-          logger.error('Suggestion stream error', {
-            error: error.message,
-          })
-          setIsLoadingSuggestions(false)
-        },
-        () => {
-          logger.info('Suggestion stream completed')
-          setIsLoadingSuggestions(false)
-        }
-      )
-      .then((streamId) => {
-        logger.info('Stream started successfully', {
-          streamId,
+    wordleSolverService
+      .computeSuggestions(gameState)
+      .then((result) => {
+        logger.debug('Suggestions computed', {
+          count: result.suggestions.length,
+          remainingAnswers: result.remainingAnswers,
         })
-        currentStreamId = streamId
+        setSuggestion({
+          suggestions: result.suggestions,
+          topSuggestion: result.suggestions[0] || null,
+          remainingAnswers: result.remainingAnswers,
+        })
       })
-      .catch((err) => {
-        logger.error('Failed to start stream', {
-          error: String(err),
+      .catch((error: Error) => {
+        logger.error('Solver error', {
+          error: error.message,
         })
-        setIsLoadingSuggestions(false)
+        setSuggestion(null)
       })
-
-    return () => {
-      // Cleanup: close stream if component unmounts
-      // or dependencies change
-      if (currentStreamId) {
-        logger.info('Closing stream on cleanup', {
-          streamId: currentStreamId,
-        })
-        wordleAIClient.closeStream(currentStreamId)
-          .catch((err: Error) => {
-            logger.warn('Failed to close stream on cleanup', {
-              error: String(err),
-            })
-          })
-      }
-    }
-  }, [gameStateKey, maxDepth])
+      .finally(() => {
+        setIsComputing(false)
+      })
+  }, [gameState, wordlistsLoaded])
 
   // Log game state changes
   useEffect(() => {
@@ -262,11 +241,8 @@ function App() {
           suggestion={
             suggestion || defaultSuggestion
           }
-          isLoading={isLoadingSuggestions}
+          isLoading={isComputing}
           isDarkMode={isDarkMode}
-          maxDepth={maxDepth}
-          currentDepth={currentDepth}
-          onMaxDepthChange={setMaxDepth}
           boardHeight={boardHeight}
           onPuzzleStateChange={setPuzzleState}
         />

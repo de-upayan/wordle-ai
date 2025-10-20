@@ -14,7 +14,21 @@ import { getPuzzleState } from './utils/puzzleStateStyles'
 
 const logger = createLogger('App')
 
+// Detect actual mobile device (not just narrow viewport)
+const isMobileDevice = () => {
+  // Check user agent for mobile OS
+  const userAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  )
+  // Check for touch capability
+  const touchCapable = ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints > 0) ||
+    ((navigator as unknown as { msMaxTouchPoints: number }).msMaxTouchPoints > 0)
+  return userAgent && touchCapable
+}
+
 function App() {
+  const [isMobile, setIsMobile] = useState(isMobileDevice())
   const [isTyping, setIsTyping] = useState(false)
   const [typedWord, setTypedWord] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -32,6 +46,23 @@ function App() {
   const { gameState, addGuess, setFeedback } = useGameState()
   const { answersList, guessesList, isLoaded: wordlistsLoaded } =
     useWordlists()
+
+  // Skip loading screen on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setSuggestion({
+        suggestions: [
+          { word: 'SLATE', score: 0.0 },
+          { word: 'CRANE', score: 0.0 },
+          { word: 'STARE', score: 0.0 },
+          { word: 'RAISE', score: 0.0 },
+          { word: 'AROSE', score: 0.0 },
+        ],
+        topSuggestion: { word: 'SLATE', score: 0.0 },
+        remainingAnswers: 2315,
+      })
+    }
+  }, [isMobile])
 
 
 
@@ -138,7 +169,10 @@ function App() {
   }, [suggestion?.suggestions.length])
 
   // Initialize solver service when wordlists are loaded
+  // Skip entirely if on mobile device
   useEffect(() => {
+    if (isMobile) return
+
     if (wordlistsLoaded && answersList.length > 0 && guessesList.length > 0) {
       logger.info('Initializing solver service', {
         answersCount: answersList.length,
@@ -151,10 +185,13 @@ function App() {
           })
         })
     }
-  }, [wordlistsLoaded, answersList, guessesList])
+  }, [isMobile, wordlistsLoaded, answersList, guessesList])
 
   // Compute suggestions when game state or typed word changes
+  // Skip if on mobile device
   useEffect(() => {
+    if (isMobile) return
+
     if (!wordlistsLoaded) {
       logger.debug('Wordlists not loaded yet, skipping computation')
       return
@@ -187,7 +224,7 @@ function App() {
         }
         setSuggestion(null)
       })
-  }, [gameState, wordlistsLoaded, useStrictGuesses, typedWord])
+  }, [gameState, wordlistsLoaded, useStrictGuesses, typedWord, isMobile])
 
   // Log game state changes
   useEffect(() => {
@@ -271,6 +308,33 @@ function App() {
         ? 'bg-gray-900 text-white'
         : 'bg-white text-gray-900'
     }`}>
+      {/* Mobile Device Overlay */}
+      {isMobile && (
+        <div className="fixed inset-0 z-50 flex items-center
+          justify-center bg-black/80 backdrop-blur-sm">
+          <div className={`text-center px-6 py-8 rounded-lg
+            max-w-sm ${
+            isDarkMode
+              ? 'bg-gray-800'
+              : 'bg-white'
+          }`}>
+            <p className={`text-lg mb-6 ${
+              isDarkMode
+                ? 'text-gray-300'
+                : 'text-gray-600'
+            }`}>
+              Please view this website on a desktop for the best experience.
+            </p>
+            <p className={`text-sm ${
+              isDarkMode
+                ? 'text-gray-400'
+                : 'text-gray-500'
+            }`}>
+              It requires keyboard input.
+            </p>
+          </div>
+        </div>
+      )}
       {/* First Load Blurred Loading Screen */}
       {!suggestion && (
         <div className={`absolute inset-0 flex items-center

@@ -288,10 +288,12 @@ function App() {
       )}
 
       {/* Dark Mode Toggle */}
-      <div className="absolute top-8 right-8">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6
+        lg:top-8 lg:right-8">
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
-          className={`relative inline-flex h-10 w-20 items-center
+          className={`relative inline-flex h-8 w-16 sm:h-9
+            sm:w-18 lg:h-10 lg:w-20 items-center
             rounded-full transition-colors duration-300 ${
               isDarkMode
                 ? 'bg-gray-700'
@@ -300,10 +302,14 @@ function App() {
           title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           <span
-            className={`absolute inline-flex h-8 w-8 items-center
+            className={`absolute inline-flex h-7 w-7 sm:h-7.5
+              sm:w-7.5 lg:h-8 lg:w-8 items-center
               justify-center transform rounded-full bg-white
-              transition-all duration-300 text-2xl text-black ${
-                isDarkMode ? 'translate-x-11' : 'translate-x-1'
+              transition-all duration-300 text-lg sm:text-xl
+              lg:text-2xl text-black ${
+                isDarkMode
+                  ? 'translate-x-9 sm:translate-x-10 lg:translate-x-11'
+                  : 'translate-x-0.5 sm:translate-x-1 lg:translate-x-1'
               }`}
           >
             <span
@@ -324,7 +330,9 @@ function App() {
         </button>
       </div>
 
-      <div className="flex gap-8 items-center">
+      <div className="flex flex-col lg:flex-row gap-4
+        sm:gap-6 lg:gap-8 items-center lg:items-start
+        px-4 sm:px-6 lg:px-0 w-full lg:w-auto">
         {/* Game Board */}
         <GameBoard
           guesses={gameState.history}

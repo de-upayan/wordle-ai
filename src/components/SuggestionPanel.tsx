@@ -33,8 +33,9 @@ function SuggestionRow({
   if (isBlank) {
     return (
       <div
-        className="py-3 flex items-center justify-between
-          gap-3 bg-transparent"
+        className="py-2 sm:py-2.5 lg:py-3 flex items-center
+          justify-between gap-2 sm:gap-2.5 lg:gap-3
+          bg-transparent"
       />
     )
   }
@@ -44,16 +45,19 @@ function SuggestionRow({
 
   return (
     <div
-      className="py-3 flex items-center justify-between gap-3
+      className="py-2 sm:py-2.5 lg:py-3 flex items-center
+        justify-between gap-2 sm:gap-2.5 lg:gap-3
         bg-transparent"
     >
       {/* Word with letter squares */}
-      <div className="flex gap-1">
+      <div className="flex gap-0.5 sm:gap-0.5 lg:gap-1">
         {item!.word.split('').map((letter, idx) => (
           <div
             key={idx}
-            className={`w-8 h-8 flex items-center
-              justify-center border-2 font-bold text-2xl ${
+            className={`w-6 h-6 sm:w-7 sm:h-7 lg:w-8
+              lg:h-8 flex items-center justify-center
+              border-2 font-bold text-sm sm:text-base
+              lg:text-2xl ${
               isSelected
                 ? isDarkMode
                   ? 'bg-green-800 border-green-700 text-green-100'
@@ -70,7 +74,8 @@ function SuggestionRow({
 
       {/* Score */}
       <span
-        className={`text-lg font-semibold whitespace-nowrap ${
+        className={`text-xs sm:text-sm lg:text-lg
+          font-semibold whitespace-nowrap ${
           isSelected
             ? isDarkMode
               ? 'text-green-100'
@@ -105,7 +110,9 @@ export function SuggestionPanel({
 
   return (
     <div
-      className={`p-4 flex flex-col w-64 h-106 ${
+      className={`p-3 sm:p-4 lg:p-4 flex flex-col
+        w-54 sm:w-66 lg:w-64 h-auto sm:h-auto lg:h-106
+        max-h-48 sm:max-h-64 lg:max-h-none ${
         isDarkMode
           ? 'bg-gray-800'
           : 'bg-gray-50'
@@ -113,7 +120,7 @@ export function SuggestionPanel({
     >
 
       {/* Strict Guesses Toggle */}
-      <div className="mb-4 flex items-center
+      <div className="mb-3 sm:mb-4 lg:mb-4 flex items-center
         justify-between">
         <span className={`text-xs font-semibold ${
           isDarkMode
@@ -159,7 +166,8 @@ export function SuggestionPanel({
       {suggestion && (
         <div className="flex flex-col flex-1 min-h-0">
           {/* Remaining Answers Count */}
-          <div className={`mb-3 pb-3 border-b ${
+          <div className={`mb-2 sm:mb-3 lg:mb-3 pb-2
+            sm:pb-3 lg:pb-3 border-b ${
             isDarkMode ? 'border-gray-700' :
               'border-gray-200'
           }`}>
@@ -172,7 +180,8 @@ export function SuggestionPanel({
               }`}>
                 Remaining Answers
               </p>
-              <p className={`text-lg font-bold ${
+              <p className={`text-sm sm:text-base
+                lg:text-lg font-bold ${
                 puzzleState
                   ? getPuzzleStateTextStyle(
                       puzzleState,
@@ -189,7 +198,8 @@ export function SuggestionPanel({
           {suggestion.suggestions.length === 0 ? (
             <div className="flex flex-1 items-center
               justify-center">
-              <p className={`text-center text-xs ${
+              <p className={`text-center text-xs sm:text-xs
+                lg:text-xs ${
                 isDarkMode
                   ? 'text-gray-500'
                   : 'text-gray-400'

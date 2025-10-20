@@ -14,27 +14,34 @@ export function InstructionPanel({
     ? getPuzzleState(suggestion.remainingAnswers)
     : null
 
-  const getInstructionText = (): string => {
+  const getInstructionText = (isMobile: boolean): string => {
     // Check puzzle state
     if (puzzleState === PuzzleState.INVALID) {
-      return 'No valid answers left. Maybe you set a letter to the wrong color?'
+      return isMobile
+        ? 'No valid answers left.'
+        : 'No valid answers left. Maybe you set a letter to the wrong color?'
     }
 
     if (puzzleState === PuzzleState.SOLVED) {
-      return 'That\'s it! Puzzle solved.'
+      return 'Puzzle solved!'
     }
 
     // Default instruction
-    return 'Type your guess, press ⏎ to accept, and click on the letters to toggle their color. ⇧+⏎ to accept the top suggestion.'
+    return isMobile
+      ? 'Type guess, press ⏎, click letters to toggle color.'
+      : 'Type your guess, press ⏎ to accept, and click on the letters to toggle their color. ⇧+⏎ to accept the top suggestion.'
   }
 
   return (
     <div
-      className={`w-full text-center pt-8 pb-4 px-4 ${
+      className={`w-full text-center pt-4 sm:pt-6 lg:pt-8
+        pb-2 sm:pb-3 lg:pb-4 px-2 sm:px-4 lg:px-4 ${
         isDarkMode ? 'text-gray-300' : 'text-gray-700'
       }`}
     >
-      <p className="text-sm">{getInstructionText()}</p>
+      <p className="text-xs sm:text-sm lg:text-sm">
+        {getInstructionText(window.innerWidth < 768)}
+      </p>
     </div>
   )
 }

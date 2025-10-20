@@ -37,7 +37,8 @@ export function GameBoard({
     const displayWord = isCurrentRow && isTyping ? typedWord : guess?.word || ''
 
     return (
-      <div key={rowIndex} className="flex gap-2">
+      <div key={rowIndex} className="flex gap-1 sm:gap-1.5
+        lg:gap-2">
         {Array(5)
           .fill(null)
           .map((_, tileIndex) => {
@@ -97,7 +98,8 @@ export function GameBoard({
   return (
     <div
       ref={boardRef}
-      className="flex flex-col gap-2 outline-none"
+      className="flex flex-col gap-1 sm:gap-1.5 lg:gap-2
+        outline-none"
     >
       {Array(6)
         .fill(null)

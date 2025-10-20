@@ -15,6 +15,7 @@ interface SuggestionPanelProps {
   useStrictGuesses?: boolean
   onUseStrictGuessesChange?: (value: boolean) => void
   selectedSuggestionIndex?: number
+  isLoading?: boolean
 }
 
 function SuggestionRow({
@@ -98,6 +99,7 @@ export function SuggestionPanel({
   useStrictGuesses = true,
   onUseStrictGuessesChange,
   selectedSuggestionIndex = 0,
+  isLoading = false,
 }: SuggestionPanelProps) {
 
   const puzzleState = suggestion
@@ -163,7 +165,29 @@ export function SuggestionPanel({
         </button>
       </div>
 
-      {suggestion && (
+      {isLoading ? (
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex flex-1 items-center
+            justify-center">
+            <div className="flex flex-col items-center
+              gap-2">
+              <div className={`w-4 h-4 border-2
+                border-t-2 rounded-full animate-spin ${
+                isDarkMode
+                  ? 'border-gray-600 border-t-gray-400'
+                  : 'border-gray-300 border-t-gray-600'
+              }`} />
+              <p className={`text-xs ${
+                isDarkMode
+                  ? 'text-gray-500'
+                  : 'text-gray-400'
+              }`}>
+                Loading suggestions
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : suggestion && (
         <div className="flex flex-col flex-1 min-h-0">
           {/* Remaining Answers Count */}
           <div className={`mb-2 sm:mb-3 lg:mb-3 pb-2

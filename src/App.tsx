@@ -38,6 +38,8 @@ function App() {
   const [useStrictGuesses, setUseStrictGuesses] = useState(true)
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] =
     useState(0)
+  const [isLoadingSuggestions, setIsLoadingSuggestions] =
+    useState(false)
 
   // Derive puzzle state from suggestion
   const puzzleState = suggestion
@@ -47,6 +49,10 @@ function App() {
   const { answersList, guessesList, isLoaded: wordlistsLoaded } =
     useWordlists()
 
+  // Derive selected suggestion from index
+  const selectedSuggestion =
+    suggestion?.suggestions[selectedSuggestionIndex]?.word || ''
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark')
@@ -54,10 +60,6 @@ function App() {
       document.documentElement.classList.remove('dark')
     }
   }, [isDarkMode])
-
-  // Derive selected suggestion from index
-  const selectedSuggestion =
-    suggestion?.suggestions[selectedSuggestionIndex]?.word || ''
 
   // Global keyboard handler
   useEffect(() => {
@@ -183,8 +185,13 @@ function App() {
       typedWord,
     })
 
-    wordleSolverService
+    const computePromise = wordleSolverService
       .computeSuggestions(gameState, useStrictGuesses, 30000, typedWord)
+
+    setIsLoadingSuggestions(true)
+    setSuggestion(null)
+
+    computePromise
       .then((result) => {
         logger.debug('Suggestions computed', {
           count: result.suggestions.length,
@@ -195,6 +202,7 @@ function App() {
           topSuggestion: result.suggestions[0] || null,
           remainingAnswers: result.remainingAnswers,
         })
+        setIsLoadingSuggestions(false)
       })
       .catch((error: Error) => {
         // Don't log cancellation errors - they're expected
@@ -384,6 +392,7 @@ function App() {
           useStrictGuesses={useStrictGuesses}
           onUseStrictGuessesChange={setUseStrictGuesses}
           selectedSuggestionIndex={selectedSuggestionIndex}
+          isLoading={isLoadingSuggestions}
         />
       </div>
 

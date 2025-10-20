@@ -185,25 +185,38 @@ export function SuggestionPanel({
             </div>
           </div>
 
-          {/* Suggestions List */}
-          <div className="flex flex-col flex-1
-            justify-around overflow-y-auto">
-            {Array.from({ length: MAX_SUGGESTIONS }).map(
-              (_, idx) => {
-                const item = suggestion.suggestions[idx]
-                return (
-                  <SuggestionRow
-                    key={idx}
-                    item={item}
-                    isSelected={idx === selectedSuggestionIndex}
-                    isDarkMode={isDarkMode}
-                    isBlank={!item}
-                    puzzleState={puzzleState || undefined}
-                  />
-                )
-              },
-            )}
-          </div>
+          {/* Suggestions List or No Valid Guesses */}
+          {suggestion.suggestions.length === 0 ? (
+            <div className="flex flex-1 items-center
+              justify-center">
+              <p className={`text-center text-xs ${
+                isDarkMode
+                  ? 'text-gray-500'
+                  : 'text-gray-400'
+              }`}>
+                No valid guesses.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col flex-1
+              justify-around overflow-y-auto">
+              {Array.from({ length: MAX_SUGGESTIONS }).map(
+                (_, idx) => {
+                  const item = suggestion.suggestions[idx]
+                  return (
+                    <SuggestionRow
+                      key={idx}
+                      item={item}
+                      isSelected={idx === selectedSuggestionIndex}
+                      isDarkMode={isDarkMode}
+                      isBlank={!item}
+                      puzzleState={puzzleState || undefined}
+                    />
+                  )
+                },
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

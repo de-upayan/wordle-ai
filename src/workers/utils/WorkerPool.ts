@@ -29,7 +29,7 @@ export class WorkerPool<T, R> {
   private poolSize: number
 
   constructor(
-    private workerScript: string,
+    private workerUrl: string,
     poolSize?: number
   ) {
     // Use provided pool size or auto-detect based on CPU cores
@@ -61,12 +61,9 @@ export class WorkerPool<T, R> {
    */
   private initializeWorkers(): void {
     for (let i = 0; i < this.poolSize; i++) {
-      // Resolve worker path relative to src/workers directory
-      const workerUrl = new URL(
-        `../${this.workerScript}`,
-        import.meta.url
-      )
-      const worker = new Worker(workerUrl, { type: 'module' })
+      const worker = new Worker(this.workerUrl, {
+        type: 'module',
+      })
 
       worker.onmessage = (event: MessageEvent<WorkerResult<R>>) => {
         this.handleWorkerResult(i, event.data)

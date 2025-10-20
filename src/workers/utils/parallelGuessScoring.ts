@@ -4,6 +4,7 @@
  */
 
 import { WorkerPool } from './WorkerPool'
+import guessScoringWorkerUrl from '../guessScoring.worker.ts?worker&url'
 
 export interface GuessScoringTask {
   guesses: string[]
@@ -27,9 +28,7 @@ export class ParallelGuessScorer {
   constructor() {
     // Initialize worker pool with auto-sized pool
     // (based on available CPU cores, capped at 8)
-    this.workerPool = new WorkerPool(
-      'guessScoring.worker.ts'
-    )
+    this.workerPool = new WorkerPool(guessScoringWorkerUrl)
   }
 
   /**

@@ -10,4 +10,28 @@ export default defineConfig({
     strictPort: true,
     middlewareMode: false,
   },
+  build: {
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+      },
+    },
+  },
+  worker: {
+    format: 'es',
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+      },
+    },
+  },
+  optimizeDeps: {
+    exclude: ['*.worker.ts', '*.worker.js'],
+  },
+  ssr: {
+    noExternal: ['*.worker.ts', '*.worker.js'],
+  },
 })

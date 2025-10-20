@@ -1,4 +1,4 @@
-.PHONY: install dev build lint
+.PHONY: install dev build lint serve
 
 install:
 	npm install
@@ -11,3 +11,6 @@ build:
 
 lint:
 	npm run lint
+
+serve:
+	npx serve -s dist

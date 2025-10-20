@@ -56,7 +56,10 @@ self.onmessage = (event: MessageEvent) => {
       // Create new computation worker for this request
       state.currentRequestId = requestId
       state.currentComputeWorker = new Worker(
-        new URL('./solveComputation.worker.ts', import.meta.url),
+        new URL(
+          './solveComputation.worker.ts',
+          import.meta.url
+        ),
         { type: 'module' }
       )
 

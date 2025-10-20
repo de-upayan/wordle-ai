@@ -105,7 +105,7 @@ export function SuggestionPanel({
 
   return (
     <div
-      className={`p-4 flex flex-col w-64 ${
+      className={`p-4 flex flex-col w-64 h-106 ${
         isDarkMode
           ? 'bg-gray-800'
           : 'bg-gray-50'

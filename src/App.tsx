@@ -149,7 +149,12 @@ function App() {
   }, [suggestion, selectedSuggestion, isTyping, typedWord,
     gameState.history.length, undoGuess])
 
-  // Reset selected index when suggestions change
+  // Reset selected index when new row starts
+  useEffect(() => {
+    setSelectedSuggestionIndex(0)
+  }, [gameState.history.length])
+
+  // Clamp selected index when suggestions list changes
   useEffect(() => {
     if (suggestion) {
       const MAX_SUGGESTIONS = 5
@@ -158,7 +163,7 @@ function App() {
         suggestion.suggestions.length - 1
       )
       if (selectedSuggestionIndex > maxIndex) {
-        setSelectedSuggestionIndex(Math.max(0, maxIndex))
+        setSelectedSuggestionIndex(maxIndex)
       }
     }
   }, [suggestion?.suggestions.length])

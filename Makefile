@@ -1,17 +1,13 @@
-.PHONY: dev-backend dev-frontend test docker-up docker-down
+.PHONY: install dev build lint
 
-dev-backend:
-	@cd backend && mkdir -p logs/main && \
-	go run main.go 2>&1 | tee logs/main/current
+install:
+	npm install
 
-dev-frontend:
-	cd frontend && npm run dev
+dev:
+	npm run dev
 
-test:
-	cd backend && go test ./...
+build:
+	npm run build
 
-docker-up:
-	docker-compose up --build
-
-docker-down:
-	docker-compose down
+lint:
+	npm run lint

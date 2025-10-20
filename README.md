@@ -1,249 +1,169 @@
 # Wordle AI Solver
 
-A Wordle solver/assistant that provides AI-powered suggestions to help you solve the official Wordle game.
+A fully client-side Wordle solver/assistant that provides AI-powered suggestions to help you solve the official Wordle game. The solving algorithm runs entirely in your browser using Web Workers, with no backend required.
 
 ## Tech Stack
 
 - **Frontend**: React + Vite + TypeScript + Tailwind CSS
-- **Backend**: Go with structured logging
-- **Containerization**: Docker
-- **Orchestration**: Kubernetes
+- **Computation**: Web Workers (non-blocking background threads)
+- **Algorithm**: Information Gain Strategy (entropy-based heuristic)
+- **Deployment**: GitHub Pages (static site hosting)
 
-## Running the Project
+## How It Works
 
-### Local Development
+The application uses a **Strategy Pattern** architecture with pluggable solving strategies:
 
-Run backend and frontend in separate terminals:
+1. **Web Worker Architecture**: The computationally intensive Wordle solving algorithm runs in a background Web Worker thread, preventing UI blocking
+2. **Information Gain Strategy**: Scores each possible guess by calculating entropy reduction (information gain), selecting guesses that maximize the expected information
+3. **Utility Functions**: Shared utility functions handle feedback calculation, word filtering, and constraint satisfaction
+4. **Client-Side Only**: All computation happens in the browser - no backend server required
 
-**Terminal 1 - Backend:**
-```bash
-make dev-backend
-```
+### Algorithm Overview
 
-**Terminal 2 - Frontend:**
-```bash
-make dev-frontend
-```
-
-Then open http://localhost:5173 in your browser.
-
-### Kubernetes
-
-Deploy the application to Kubernetes with separate backend and frontend services.
-
-#### Prerequisites
-
-- Kubernetes cluster running (e.g., Minikube, Docker Desktop with Kubernetes enabled, or cloud provider)
-- `kubectl` configured to access your cluster
-- Docker installed and running
-
-#### Local Minikube Setup
-
-**Start Minikube:**
-```bash
-minikube start
-```
-
-**Configure Docker to use Minikube's Docker daemon:**
-```bash
-eval $(minikube docker-env)
-```
-
-This command configures your shell to use Minikube's Docker daemon, so images built locally are available to the cluster without pushing to a registry.
-
-#### Build Docker Images
-
-**Build backend image:**
-```bash
-docker build -t wordle-ai-backend:latest ./backend
-```
-
-**Build frontend image:**
-```bash
-# Build with Kubernetes backend URL
-docker build \
-  --build-arg VITE_API_BASE_URL=http://backend-service:8080 \
-  -t wordle-ai-frontend:latest ./frontend
-```
-
-**Note:** The frontend is built as a production build and served as static files. The `VITE_API_BASE_URL` is baked into the build at compile time.
-
-#### Deploy to Kubernetes
-
-**Deploy all resources:**
-```bash
-kubectl apply -f k8s/all-in-one.yaml
-```
-
-Or deploy individual components:
-```bash
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/backend-service.yaml
-kubectl apply -f k8s/backend-deployment.yaml
-kubectl apply -f k8s/frontend-service.yaml
-kubectl apply -f k8s/frontend-deployment.yaml
-```
-
-#### Check Deployment Status
-
-```bash
-# View all resources in the wordle-ai namespace
-kubectl get all -n wordle-ai
-
-# View pods
-kubectl get pods -n wordle-ai
-
-# View services
-kubectl get svc -n wordle-ai
-
-# View deployments
-kubectl get deployments -n wordle-ai
-
-# Watch pod status in real-time
-kubectl get pods -n wordle-ai -w
-```
-
-#### Access the Application
-
-**For Minikube:**
-```bash
-# Get the Minikube IP
-minikube ip
-
-# Port-forward to access frontend locally
-kubectl port-forward svc/frontend-service 5173:80 -n wordle-ai
-
-# Then open http://localhost:5173 in your browser
-```
-
-**For cloud Kubernetes:**
-```bash
-# Get the external IP/port for frontend
-kubectl get svc frontend-service -n wordle-ai
-
-# Wait for EXTERNAL-IP to be assigned, then access via that IP
-```
-
-#### View Logs
-
-```bash
-# Backend pod logs (all replicas)
-kubectl logs -f deployment/backend -n wordle-ai
-
-# Frontend pod logs
-kubectl logs -f deployment/frontend -n wordle-ai
-
-# Specific pod logs
-kubectl logs -f <pod-name> -n wordle-ai
-```
-
-#### Scale Backend Replicas
-
-```bash
-# Scale to 3 replicas
-kubectl scale deployment backend --replicas=3 -n wordle-ai
-
-# View current replicas
-kubectl get deployment backend -n wordle-ai
-```
-
-#### Troubleshooting
-
-**Images not found (ImagePullBackOff):**
-- Ensure you ran `eval $(minikube docker-env)` in the current terminal
-- Build images in the same terminal after running the above command
-- Use exact image names: `wordle-ai-backend:latest` and `wordle-ai-frontend:latest`
-
-**Port already in use:**
-```bash
-# Use a different port for port-forwarding
-kubectl port-forward svc/frontend-service 8000:80 -n wordle-ai
-# Then access http://localhost:8000
-```
-
-**View Minikube dashboard:**
-```bash
-minikube dashboard
-```
-
-#### Clean Up
-
-```bash
-# Delete all resources
-kubectl delete namespace wordle-ai
-
-# Stop Minikube (preserves state)
-minikube stop
-
-# Delete Minikube cluster (removes everything)
-minikube delete
-```
-
-#### Architecture
-
-- **Backend Service**: 2 replicas with load balancing via Kubernetes Service
-- **Frontend Service**: 1 replica exposed via LoadBalancer
-- **Communication**: Frontend connects to backend via `http://backend-service:8080` (internal DNS)
-- **Health Checks**: Liveness and readiness probes configured for both services
-- **Resource Limits**: CPU and memory requests/limits defined for both services
+- **Feedback Calculation**: Two-pass algorithm matching official Wordle rules (greens first, then yellows/grays)
+- **Word Filtering**: Constraint-based filtering to eliminate words that don't match previous feedback
+- **Information Gain**: Shannon entropy calculation to score guesses by their ability to partition the remaining answer space
+- **Top 5 Suggestions**: Returns the 5 guesses with highest information gain
 
 ## Project Structure
 
 ```
 wordle-ai/
-├── backend/           # Go backend service
-│   ├── main.go
-│   ├── cmd/
-│   ├── handlers/
-│   ├── models/
-│   └── Dockerfile
-├── frontend/          # React + Vite frontend
-│   ├── src/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── services/
-│   │   ├── types/
-│   │   ├── App.tsx
-│   │   └── main.jsx
-│   ├── Dockerfile
-│   └── package.json
-├── k8s/               # Kubernetes manifests
-│   ├── namespace.yaml
-│   ├── configmap.yaml
-│   ├── backend-service.yaml
-│   ├── backend-deployment.yaml
-│   ├── frontend-service.yaml
-│   ├── frontend-deployment.yaml
-│   └── all-in-one.yaml
-├── Makefile          # Development commands
-└── README.md         # This file
+├── src/                    # React source code
+│   ├── components/         # React components
+│   ├── hooks/              # Custom React hooks
+│   ├── services/           # Service layer (Web Worker communication)
+│   ├── types/              # TypeScript type definitions
+│   ├── utils/              # Utility functions
+│   ├── workers/            # Web Worker files
+│   │   ├── strategies/     # Solving strategy implementations
+│   │   │   ├── SolvingStrategy.ts    # Strategy interface
+│   │   │   └── InformationGainStrategy.ts
+│   │   ├── wordleUtils.ts  # Shared utility functions
+│   │   └── wordleSolver.worker.ts    # Main worker entry point
+│   ├── App.tsx
+│   └── main.jsx
+├── public/                 # Static assets
+│   └── wordlists/          # Wordle word lists (answers.txt, guesses.txt)
+├── dist/                   # Production build output
+├── package.json
+├── vite.config.js
+├── Dockerfile              # Docker configuration for static file serving
+├── Makefile                # Development commands
+└── README.md               # This file
 ```
 
-## Environment Variables
+## Getting Started
 
-**Frontend** (`VITE_API_BASE_URL`):
-- Local development: `http://localhost:8080`
-- Kubernetes: `http://backend-service:8080` (set in k8s/configmap.yaml)
+### Prerequisites
 
-**Backend** (`LOG_LEVEL`):
-- Default: `info` (set in k8s/configmap.yaml)
+- Node.js 18+ and npm
 
-## Available Commands
+### Installation
 
 ```bash
-make dev-backend      # Run backend locally
-make dev-frontend     # Run frontend locally
-make test             # Run backend tests
+make install
 ```
+
+### Local Development
+
+```bash
+make dev
+```
+
+Open http://localhost:5173 in your browser.
+
+### Production Build
+
+```bash
+make build
+```
+
+Output is in `dist/` - ready to deploy to GitHub Pages or any static host.
+
+### Linting
+
+```bash
+make lint
+```
+
+## Deployment
+
+### GitHub Pages
+
+1. Update `vite.config.js` with your repository name:
+   ```javascript
+   export default defineConfig({
+     base: '/wordle-ai/',  // Change to your repo name
+     // ...
+   })
+   ```
+
+2. Build the project:
+   ```bash
+   make build
+   ```
+
+3. Deploy `dist/` folder to GitHub Pages
+
+### Docker
+
+Build and run the Docker image:
+
+```bash
+docker build -t wordle-ai .
+docker run -p 3000:3000 wordle-ai
+```
+
+Then open http://localhost:3000 in your browser.
+
+## Architecture
+
+### Web Worker Strategy Pattern
+
+The solving algorithm is organized using the Strategy Pattern:
+
+- **SolvingStrategy Interface** (`src/workers/strategies/SolvingStrategy.ts`): Defines the contract for solving strategies
+- **InformationGainStrategy** (`src/workers/strategies/InformationGainStrategy.ts`): Concrete implementation using entropy-based heuristic
+- **Shared Utilities** (`src/workers/wordleUtils.ts`): Reusable functions for feedback calculation, word filtering, etc.
+- **Worker Orchestrator** (`src/workers/wordleSolver.worker.ts`): Manages strategy instantiation and message handling
+
+### Message Protocol
+
+Main thread ↔ Web Worker communication:
+
+```typescript
+// INIT message
+{ type: 'INIT', answersList: string[], guessesList: string[] }
+
+// SOLVE message
+{ type: 'SOLVE', gameState: GameState }
+
+// SOLVE_COMPLETE response
+{ type: 'SOLVE_COMPLETE', suggestions: SuggestionItem[], remainingAnswers: number }
+
+// ERROR response
+{ type: 'ERROR', error: string }
+```
+
+## Performance
+
+- **Initial Computation**: ~10-20 seconds (computing information gain for 10,657 guesses against 2,315 answers)
+- **Subsequent Computations**: Faster as the answer space shrinks with each guess
+- **Non-Blocking UI**: Web Worker prevents UI freezing during computation
+- **Timeout**: 30 seconds per computation (configurable in `wordleSolverService.ts`)
 
 ## Troubleshooting
 
-**Frontend won't connect to backend:**
-- Ensure backend is running on http://localhost:8080
-- Check browser console for errors
-- Verify `VITE_API_BASE_URL` is set correctly
+**Suggestions not appearing:**
+- Check browser console (F12) for errors
+- Verify wordlists loaded: `fetch('/wordlists/answers.txt').then(r => r.text()).then(t => console.log(t.split('\n').length))`
+- Ensure Web Worker initialized: Look for "Web Worker initialized successfully" in console
 
 **Port already in use:**
-- Backend (8080): `lsof -i :8080`
-- Frontend (5173): `lsof -i :5173`
+- Development: `lsof -i :5173`
+- Docker: `lsof -i :3000`
+
+## License
+
+MIT

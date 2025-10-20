@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: wordle-ai-config
-  namespace: wordle-ai
-data:
-  LOG_LEVEL: "info"
-  VITE_API_BASE_URL: "http://backend-service:8080"
-

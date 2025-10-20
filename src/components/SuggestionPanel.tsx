@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Suggestion, SuggestionItem, PuzzleState } from '../types/index'
 import {
   getPuzzleState,
@@ -17,17 +17,18 @@ interface SuggestionPanelProps {
   onPuzzleStateChange?: (state: PuzzleState | null) => void
   useStrictGuesses?: boolean
   onUseStrictGuessesChange?: (value: boolean) => void
+  selectedSuggestionIndex?: number
 }
 
 function SuggestionRow({
   item,
-  isTop,
+  isSelected,
   isDarkMode,
   isBlank = false,
   puzzleState,
 }: {
   item?: SuggestionItem
-  isTop: boolean
+  isSelected: boolean
   isDarkMode: boolean
   isBlank?: boolean
   puzzleState?: PuzzleState
@@ -56,7 +57,7 @@ function SuggestionRow({
             key={idx}
             className={`w-8 h-8 flex items-center
               justify-center border-2 font-bold text-2xl ${
-              isTop
+              isSelected
                 ? isDarkMode
                   ? 'bg-green-800 border-green-700 text-green-100'
                   : 'bg-green-100 border-green-400 text-gray-900'
@@ -73,7 +74,7 @@ function SuggestionRow({
       {/* Score */}
       <span
         className={`text-lg font-semibold whitespace-nowrap ${
-          isTop
+          isSelected
             ? isDarkMode
               ? 'text-green-100'
               : 'text-green-900'
@@ -97,6 +98,7 @@ export function SuggestionPanel({
   onPuzzleStateChange,
   useStrictGuesses = true,
   onUseStrictGuessesChange,
+  selectedSuggestionIndex = 0,
 }: SuggestionPanelProps) {
 
   const puzzleState = suggestion
@@ -233,7 +235,7 @@ export function SuggestionPanel({
                   <SuggestionRow
                     key={idx}
                     item={item}
-                    isTop={idx === 0}
+                    isSelected={idx === selectedSuggestionIndex}
                     isDarkMode={isDarkMode}
                     isBlank={!item}
                     puzzleState={puzzleState || undefined}

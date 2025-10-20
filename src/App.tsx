@@ -27,6 +27,10 @@ function App() {
     PuzzleState | null
   >(null)
   const [useStrictGuesses, setUseStrictGuesses] = useState(true)
+  const [selectedSuggestion, setSelectedSuggestion] =
+    useState('')
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] =
+    useState(0)
   const boardRef = useRef<HTMLDivElement>(null)
   const { gameState, addGuess, setFeedback } = useGameState()
   const { answersList, guessesList, isLoaded: wordlistsLoaded } =
@@ -45,6 +49,107 @@ function App() {
       document.documentElement.classList.remove('dark')
     }
   }, [isDarkMode])
+
+  // Global keyboard handler
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toUpperCase()
+
+      // Shift+Enter: submit selected suggestion
+      if (e.shiftKey && key === 'ENTER') {
+        e.preventDefault()
+        if (selectedSuggestion.length === 5) {
+          handleGuessSubmit(selectedSuggestion)
+        }
+        return
+      }
+
+      // Letter keys: add to typed word
+      if (/^[A-Z]$/.test(key)) {
+        e.preventDefault()
+        if (isTyping && typedWord.length < 5) {
+          handleTypingChange(true, typedWord + key)
+        } else if (!isTyping && typedWord.length < 5) {
+          handleTypingChange(true, key)
+        }
+        return
+      }
+
+      // Enter: submit typed word or suggestion
+      if (key === 'ENTER') {
+        e.preventDefault()
+        const wordToSubmit = isTyping ? typedWord :
+          selectedSuggestion
+        if (wordToSubmit.length === 5) {
+          handleGuessSubmit(wordToSubmit)
+          handleTypingChange(false, '')
+        }
+        return
+      }
+
+      // Backspace: remove from typed word
+      if (key === 'BACKSPACE') {
+        e.preventDefault()
+        if (isTyping) {
+          handleTypingChange(true, typedWord.slice(0, -1))
+        }
+        return
+      }
+
+      // Arrow keys: navigate suggestions
+      if (!suggestion || suggestion.suggestions.length === 0) {
+        return
+      }
+
+      const MAX_SUGGESTIONS = 5
+      const maxIndex = Math.min(
+        MAX_SUGGESTIONS - 1,
+        suggestion.suggestions.length - 1
+      )
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedSuggestionIndex((prev) =>
+          prev > 0 ? prev - 1 : maxIndex
+        )
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedSuggestionIndex((prev) =>
+          prev < maxIndex ? prev + 1 : 0
+        )
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown)
+    }
+  }, [suggestion, selectedSuggestion, isTyping, typedWord])
+
+  // Update selected suggestion when index changes
+  useEffect(() => {
+    if (suggestion && suggestion.suggestions[
+      selectedSuggestionIndex
+    ]) {
+      setSelectedSuggestion(
+        suggestion.suggestions[selectedSuggestionIndex].word
+      )
+    }
+  }, [selectedSuggestionIndex, suggestion])
+
+  // Reset selected index when suggestions change
+  useEffect(() => {
+    if (suggestion) {
+      const MAX_SUGGESTIONS = 5
+      const maxIndex = Math.min(
+        MAX_SUGGESTIONS - 1,
+        suggestion.suggestions.length - 1
+      )
+      if (selectedSuggestionIndex > maxIndex) {
+        setSelectedSuggestionIndex(Math.max(0, maxIndex))
+      }
+    }
+  }, [suggestion?.suggestions.length])
 
   // Initialize solver service when wordlists are loaded
   useEffect(() => {
@@ -227,9 +332,7 @@ function App() {
           <GameBoard
             guesses={gameState.history}
             currentRowIndex={gameState.history.length}
-            suggestion={
-              suggestion?.topSuggestion?.word || ''
-            }
+            suggestion={selectedSuggestion}
             isTyping={isTyping}
             typedWord={typedWord}
             onGuessSubmit={handleGuessSubmit}
@@ -251,6 +354,7 @@ function App() {
           onPuzzleStateChange={setPuzzleState}
           useStrictGuesses={useStrictGuesses}
           onUseStrictGuessesChange={setUseStrictGuesses}
+          selectedSuggestionIndex={selectedSuggestionIndex}
         />
       </div>
 

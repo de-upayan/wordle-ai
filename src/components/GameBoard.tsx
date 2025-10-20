@@ -33,38 +33,7 @@ export function GameBoard({
     boardRef.current?.focus()
   }, [])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const key = e.key.toUpperCase()
 
-    // Accept top suggestion with Shift+Enter
-    if (e.shiftKey && key === 'ENTER') {
-      e.preventDefault()
-      if (suggestion.length === 5) {
-        onGuessSubmit(suggestion)
-        onTypingChange(false, '')
-      }
-      return
-    }
-
-    if (/^[A-Z]$/.test(key)) {
-      e.preventDefault()
-      if (typedWord.length < 5) {
-        onTypingChange(true, typedWord + key)
-      }
-    } else if (key === 'ENTER') {
-      e.preventDefault()
-      const wordToSubmit = isTyping ? typedWord : suggestion
-      if (wordToSubmit.length === 5) {
-        onGuessSubmit(wordToSubmit)
-        onTypingChange(false, '')
-      }
-    } else if (key === 'BACKSPACE') {
-      e.preventDefault()
-      if (isTyping) {
-        onTypingChange(true, typedWord.slice(0, -1))
-      }
-    }
-  }
 
   const renderRow = (rowIndex: number) => {
     const guess = guesses[rowIndex]
@@ -133,8 +102,6 @@ export function GameBoard({
     <div
       ref={boardRef}
       className="flex flex-col gap-2 outline-none"
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
     >
       {Array(6)
         .fill(null)

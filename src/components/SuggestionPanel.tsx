@@ -182,7 +182,7 @@ export function SuggestionPanel({
                   ? 'text-gray-500'
                   : 'text-gray-400'
               }`}>
-                Loading suggestions
+                Calculating suggestions
               </p>
             </div>
           </div>

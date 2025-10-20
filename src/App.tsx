@@ -27,11 +27,23 @@ const isMobileDevice = () => {
   return userAgent && touchCapable
 }
 
+// Detect system theme preference
+const getSystemThemePreference = (): boolean => {
+  if (window.matchMedia) {
+    return window.matchMedia(
+      '(prefers-color-scheme: dark)'
+    ).matches
+  }
+  return false
+}
+
 function App() {
   const [isMobile, setIsMobile] = useState(isMobileDevice())
   const [isTyping, setIsTyping] = useState(false)
   const [typedWord, setTypedWord] = useState('')
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(
+    getSystemThemePreference()
+  )
   const [suggestion, setSuggestion] = useState<Suggestion | null>(
     null
   )

@@ -88,9 +88,12 @@ function App() {
         })
       })
       .catch((error: Error) => {
-        logger.error('Solver error', {
-          error: error.message,
-        })
+        // Don't log cancellation errors - they're expected
+        if (error.message !== 'Request cancelled') {
+          logger.error('Solver error', {
+            error: error.message,
+          })
+        }
         setSuggestion(null)
       })
       .finally(() => {

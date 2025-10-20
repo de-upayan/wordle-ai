@@ -22,6 +22,14 @@ export class WordleSolverService {
     string,
     (e: MessageEvent) => void
   > = new Map()
+  private requestRejects: Map<
+    string,
+    (reason?: unknown) => void
+  > = new Map()
+  private requestTimeouts: Map<
+    string,
+    ReturnType<typeof setTimeout>
+  > = new Map()
 
   /**
    * Initialize the service with wordlists
@@ -96,7 +104,7 @@ export class WordleSolverService {
   }
 
   /**
-   * Cancel the current request and clean up its handler
+   * Cancel the current request and forcibly reject its promise
    */
   private cancelCurrentRequest(): void {
     if (this.currentRequestId) {
@@ -108,17 +116,37 @@ export class WordleSolverService {
       }
       this.requestHandlers.delete(this.currentRequestId)
 
+      // Forcibly reject the promise
+      const reject = this.requestRejects.get(
+        this.currentRequestId
+      )
+      if (reject) {
+        reject(new Error('Request cancelled'))
+      }
+      this.requestRejects.delete(this.currentRequestId)
+
+      // Clear the timeout so it doesn't fire later
+      const timeoutId = this.requestTimeouts.get(
+        this.currentRequestId
+      )
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      this.requestTimeouts.delete(this.currentRequestId)
+
       logger.info('Cancelled previous request', {
         requestId: this.currentRequestId,
       })
 
-      // Send CANCEL message to worker
+      // Send CANCEL message to worker to terminate computation
       if (this.worker) {
         this.worker.postMessage({
           type: 'CANCEL',
           requestId: this.currentRequestId,
         })
       }
+
+      this.currentRequestId = null
     }
   }
 
@@ -155,6 +183,9 @@ export class WordleSolverService {
 
     const computePromise = new Promise<SuggestionResult>(
       (resolve, reject) => {
+        // Store reject function so we can forcibly reject on cancel
+        this.requestRejects.set(requestId, reject)
+
         const handler = (e: MessageEvent) => {
           // Only process if this is for the current request
           if (e.data.requestId !== requestId) {
@@ -169,6 +200,13 @@ export class WordleSolverService {
             })
             this.worker!.removeEventListener('message', handler)
             this.requestHandlers.delete(requestId)
+            this.requestRejects.delete(requestId)
+            // Clear timeout when promise resolves
+            const timeoutId = this.requestTimeouts.get(requestId)
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              this.requestTimeouts.delete(requestId)
+            }
             resolve({
               suggestions: e.data.suggestions,
               remainingAnswers: e.data.remainingAnswers,
@@ -181,12 +219,26 @@ export class WordleSolverService {
             })
             this.worker!.removeEventListener('message', handler)
             this.requestHandlers.delete(requestId)
+            this.requestRejects.delete(requestId)
+            // Clear timeout when promise rejects
+            const timeoutId = this.requestTimeouts.get(requestId)
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              this.requestTimeouts.delete(requestId)
+            }
             reject(new Error(e.data.error))
           }
         }
 
         this.requestHandlers.set(requestId, handler)
         this.worker!.addEventListener('message', handler)
+
+        // Set up timeout
+        const timeoutId = setTimeout(() => {
+          logger.warn('Solver computation timeout', { requestId })
+          reject(new Error('Solver computation timeout'))
+        }, timeoutMs)
+        this.requestTimeouts.set(requestId, timeoutId)
 
         // Send SOLVE message with request ID
         this.worker!.postMessage({
@@ -197,15 +249,7 @@ export class WordleSolverService {
       }
     )
 
-    // Race with timeout
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => {
-        logger.warn('Solver computation timeout', { requestId })
-        reject(new Error('Solver computation timeout'))
-      }, timeoutMs)
-    )
-
-    return Promise.race([computePromise, timeoutPromise])
+    return computePromise
   }
 
   /**

@@ -40,6 +40,12 @@ self.onmessage = async (event: MessageEvent<ComputeMessage>) => {
       requestId,
     })
   } catch (error) {
+    // Don't send error if it's due to worker termination
+    if (error instanceof Error &&
+        error.message === 'Worker terminated') {
+      return
+    }
+
     const errorMessage =
       error instanceof Error ? error.message : String(error)
     self.postMessage({

@@ -61,14 +61,10 @@ self.onmessage = (event: MessageEvent) => {
       // Set up message handler for computation results
       const computeHandler = (event: MessageEvent) => {
         // Only process if this is still the current request
-        if (state.currentRequestId === requestId) {
+        if (event.data.requestId === state.currentRequestId) {
           self.postMessage(event.data)
         }
-        // Clean up the worker after receiving result
-        if (state.currentComputeWorker) {
-          state.currentComputeWorker.terminate()
-          state.currentComputeWorker = null
-        }
+        // Otherwise silently ignore stale results
       }
 
       state.currentComputeWorker.addEventListener(

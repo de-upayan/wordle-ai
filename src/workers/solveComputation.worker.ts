@@ -4,7 +4,7 @@
  * Runs the actual solving computation in isolation
  */
 
-import { AllGuessesStrategy } from './strategies/AllGuessesStrategy'
+import { StrictGuessesStrategy } from './strategies/StrictGuessesStrategy'
 import { GameState } from './wordleUtils'
 
 interface ComputeMessage {
@@ -26,7 +26,7 @@ self.onmessage = async (event: MessageEvent<ComputeMessage>) => {
       requestId,
     } = event.data
 
-    const strategy = new AllGuessesStrategy()
+    const strategy = new StrictGuessesStrategy()
     const result = await strategy.solve(
       gameState,
       answersList,

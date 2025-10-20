@@ -26,6 +26,7 @@ function App() {
   const [puzzleState, setPuzzleState] = useState<
     PuzzleState | null
   >(null)
+  const [useStrictGuesses, setUseStrictGuesses] = useState(true)
   const boardRef = useRef<HTMLDivElement>(null)
   const { gameState, addGuess, setFeedback } = useGameState()
   const { answersList, guessesList, isLoaded: wordlistsLoaded } =
@@ -75,7 +76,7 @@ function App() {
     })
 
     wordleSolverService
-      .computeSuggestions(gameState)
+      .computeSuggestions(gameState, useStrictGuesses)
       .then((result) => {
         logger.debug('Suggestions computed', {
           count: result.suggestions.length,
@@ -99,7 +100,7 @@ function App() {
       .finally(() => {
         setIsComputing(false)
       })
-  }, [gameState, wordlistsLoaded])
+  }, [gameState, wordlistsLoaded, useStrictGuesses])
 
   // Log game state changes
   useEffect(() => {
@@ -248,6 +249,8 @@ function App() {
           isDarkMode={isDarkMode}
           boardHeight={boardHeight}
           onPuzzleStateChange={setPuzzleState}
+          useStrictGuesses={useStrictGuesses}
+          onUseStrictGuessesChange={setUseStrictGuesses}
         />
       </div>
 

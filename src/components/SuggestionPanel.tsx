@@ -15,6 +15,8 @@ interface SuggestionPanelProps {
   isDarkMode?: boolean
   boardHeight?: number
   onPuzzleStateChange?: (state: PuzzleState | null) => void
+  useStrictGuesses?: boolean
+  onUseStrictGuessesChange?: (value: boolean) => void
 }
 
 function SuggestionRow({
@@ -93,6 +95,8 @@ export function SuggestionPanel({
   isDarkMode = false,
   boardHeight = 0,
   onPuzzleStateChange,
+  useStrictGuesses = true,
+  onUseStrictGuessesChange,
 }: SuggestionPanelProps) {
 
   const puzzleState = suggestion
@@ -125,6 +129,50 @@ export function SuggestionPanel({
           <p className="text-red-700 text-sm">{error}</p>
         </div>
       )}
+
+      {/* Strict Guesses Toggle */}
+      <div className="mb-4 flex items-center
+        justify-between">
+        <span className={`text-xs font-semibold ${
+          isDarkMode
+            ? 'text-gray-400'
+            : 'text-gray-600'
+        }`}>
+          Strict Guesses
+        </span>
+        <button
+          onClick={() =>
+            onUseStrictGuessesChange?.(
+              !useStrictGuesses
+            )
+          }
+          className={`relative inline-flex h-5 w-8
+            items-center rounded-full
+            transition-colors duration-300 ${
+            useStrictGuesses
+              ? isDarkMode
+                ? 'bg-blue-700'
+                : 'bg-blue-400'
+              : isDarkMode
+              ? 'bg-gray-600'
+              : 'bg-gray-300'
+          }`}
+          title={useStrictGuesses
+            ? 'Disable strict guesses'
+            : 'Enable strict guesses'}
+        >
+          <span
+            className={`absolute inline-flex h-4 w-4
+              items-center justify-center transform
+              rounded-full bg-white transition-all
+              duration-300 ${
+              useStrictGuesses
+                ? 'translate-x-3.5'
+                : 'translate-x-0.5'
+            }`}
+          />
+        </button>
+      </div>
 
       {isLoading && !suggestion && (
         <div className="flex flex-col gap-3 items-center

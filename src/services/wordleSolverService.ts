@@ -158,6 +158,7 @@ export class WordleSolverService {
    */
   async computeSuggestions(
     gameState: GameState,
+    useStrictGuesses: boolean = true,
     timeoutMs: number = 30000
   ): Promise<SuggestionResult> {
     if (!this.worker) {
@@ -244,6 +245,7 @@ export class WordleSolverService {
         this.worker!.postMessage({
           type: 'SOLVE',
           gameState,
+          useStrictGuesses,
           requestId,
         })
       }

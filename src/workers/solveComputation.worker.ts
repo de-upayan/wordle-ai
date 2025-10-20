@@ -5,12 +5,14 @@
  */
 
 import { StrictGuessesStrategy } from './strategies/StrictGuessesStrategy'
+import { AllGuessesStrategy } from './strategies/AllGuessesStrategy'
 import { GameState } from './wordleUtils'
 
 interface ComputeMessage {
   gameState: GameState
   answersList: string[]
   guessesList: string[]
+  useStrictGuesses: boolean
   requestId: string
 }
 
@@ -23,10 +25,13 @@ self.onmessage = async (event: MessageEvent<ComputeMessage>) => {
       gameState,
       answersList,
       guessesList,
+      useStrictGuesses,
       requestId,
     } = event.data
 
-    const strategy = new StrictGuessesStrategy()
+    const strategy = useStrictGuesses
+      ? new StrictGuessesStrategy()
+      : new AllGuessesStrategy()
     const result = await strategy.solve(
       gameState,
       answersList,

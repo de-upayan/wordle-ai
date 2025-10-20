@@ -30,6 +30,7 @@ self.onmessage = (event: MessageEvent) => {
       answersList,
       guessesList,
       gameState,
+      useStrictGuesses,
       requestId,
     } = event.data
 
@@ -77,6 +78,7 @@ self.onmessage = (event: MessageEvent) => {
         gameState,
         answersList: state.answersList,
         guessesList: state.guessesList,
+        useStrictGuesses,
         requestId,
       })
     } else if (type === 'CANCEL') {

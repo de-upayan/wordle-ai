@@ -47,25 +47,6 @@ function App() {
   const { answersList, guessesList, isLoaded: wordlistsLoaded } =
     useWordlists()
 
-  // Skip loading screen on mobile
-  useEffect(() => {
-    if (isMobile) {
-      setSuggestion({
-        suggestions: [
-          { word: 'SLATE', score: 0.0 },
-          { word: 'CRANE', score: 0.0 },
-          { word: 'STARE', score: 0.0 },
-          { word: 'RAISE', score: 0.0 },
-          { word: 'AROSE', score: 0.0 },
-        ],
-        topSuggestion: { word: 'SLATE', score: 0.0 },
-        remainingAnswers: 2315,
-      })
-    }
-  }, [isMobile])
-
-
-
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark')
@@ -298,7 +279,7 @@ function App() {
   const defaultSuggestion: Suggestion = {
     suggestions: [],
     topSuggestion: null,
-    remainingAnswers: 0,
+    remainingAnswers: answersList.length,
   }
 
   return (
@@ -333,21 +314,6 @@ function App() {
               It requires keyboard input.
             </p>
           </div>
-        </div>
-      )}
-      {/* First Load Blurred Loading Screen */}
-      {!suggestion && (
-        <div className={`absolute inset-0 flex items-center
-          justify-center backdrop-blur-lg z-50 ${
-          isDarkMode
-            ? 'bg-gray-900/60'
-            : 'bg-white/60'
-        }`}>
-          <div
-            className="animate-spin h-16 w-16 border-8
-              border-blue-500 border-t-transparent
-              rounded-full"
-          ></div>
         </div>
       )}
 

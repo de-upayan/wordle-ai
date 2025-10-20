@@ -6,7 +6,7 @@ import {
 } from '../utils/puzzleStateStyles'
 
 // Maximum number of suggestions to display
-const MAX_SUGGESTIONS = 4
+const MAX_SUGGESTIONS = 5
 
 interface SuggestionPanelProps {
   suggestion?: Suggestion

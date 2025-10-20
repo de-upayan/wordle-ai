@@ -1,5 +1,5 @@
 /**
- * Information Gain Strategy - uses entropy reduction to score guesses
+ * All Guesses Strategy - uses entropy reduction to score guesses
  * Implements the SolvingStrategy interface
  */
 
@@ -13,7 +13,7 @@ import {
   SolveResult,
 } from './SolvingStrategy'
 
-export class InformationGainStrategy implements SolvingStrategy {
+export class AllGuessesStrategy implements SolvingStrategy {
   /**
    * Calculate Shannon entropy for a set of equiprobable outcomes
    */
@@ -61,7 +61,7 @@ export class InformationGainStrategy implements SolvingStrategy {
   }
 
   /**
-   * Solve using information gain strategy - computes top 5 suggestions
+   * Solve using all guesses strategy - computes top 5 suggestions
    * Runs in isolated worker thread that can be terminated immediately
    */
   async solve(
@@ -115,4 +115,5 @@ export class InformationGainStrategy implements SolvingStrategy {
     }
   }
 }
+
 

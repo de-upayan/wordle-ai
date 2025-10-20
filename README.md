@@ -38,7 +38,7 @@ wordle-ai/
 │   ├── workers/            # Web Worker files
 │   │   ├── strategies/     # Solving strategy implementations
 │   │   │   ├── SolvingStrategy.ts    # Strategy interface
-│   │   │   └── InformationGainStrategy.ts
+│   │   │   └── AllGuessesStrategy.ts
 │   │   ├── wordleUtils.ts  # Shared utility functions
 │   │   └── wordleSolver.worker.ts    # Main worker entry point
 │   ├── App.tsx
@@ -124,7 +124,7 @@ Then open http://localhost:3000 in your browser.
 The solving algorithm is organized using the Strategy Pattern:
 
 - **SolvingStrategy Interface** (`src/workers/strategies/SolvingStrategy.ts`): Defines the contract for solving strategies
-- **InformationGainStrategy** (`src/workers/strategies/InformationGainStrategy.ts`): Concrete implementation using entropy-based heuristic
+- **AllGuessesStrategy** (`src/workers/strategies/AllGuessesStrategy.ts`): Concrete implementation using entropy-based heuristic
 - **Shared Utilities** (`src/workers/wordleUtils.ts`): Reusable functions for feedback calculation, word filtering, etc.
 - **Worker Orchestrator** (`src/workers/wordleSolver.worker.ts`): Manages strategy instantiation and message handling
 

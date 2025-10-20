@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { GameBoard } from './components/GameBoard'
 import { SuggestionPanel } from './components/SuggestionPanel'
 import { InstructionPanel } from './components/InstructionPanel'
@@ -9,8 +9,8 @@ import { createLogger } from './utils/logger'
 import { wordleSolverService } from './services/wordleSolverService'
 import {
   Suggestion,
-  PuzzleState,
 } from './types/index'
+import { getPuzzleState } from './utils/puzzleStateStyles'
 
 const logger = createLogger('App')
 
@@ -18,31 +18,22 @@ function App() {
   const [isTyping, setIsTyping] = useState(false)
   const [typedWord, setTypedWord] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
-  const [boardHeight, setBoardHeight] = useState(0)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(
     null
   )
-  const [isComputing, setIsComputing] = useState(false)
-  const [puzzleState, setPuzzleState] = useState<
-    PuzzleState | null
-  >(null)
   const [useStrictGuesses, setUseStrictGuesses] = useState(true)
-  const [selectedSuggestion, setSelectedSuggestion] =
-    useState('')
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] =
     useState(0)
-  const [suggestionsLoaded, setSuggestionsLoaded] =
-    useState(false)
-  const boardRef = useRef<HTMLDivElement>(null)
+
+  // Derive puzzle state from suggestion
+  const puzzleState = suggestion
+    ? getPuzzleState(suggestion.remainingAnswers)
+    : null
   const { gameState, addGuess, setFeedback } = useGameState()
   const { answersList, guessesList, isLoaded: wordlistsLoaded } =
     useWordlists()
 
-  useEffect(() => {
-    if (boardRef.current) {
-      setBoardHeight(boardRef.current.offsetHeight)
-    }
-  }, [])
+
 
   useEffect(() => {
     if (isDarkMode) {
@@ -51,6 +42,10 @@ function App() {
       document.documentElement.classList.remove('dark')
     }
   }, [isDarkMode])
+
+  // Derive selected suggestion from index
+  const selectedSuggestion =
+    suggestion?.suggestions[selectedSuggestionIndex]?.word || ''
 
   // Global keyboard handler
   useEffect(() => {
@@ -128,17 +123,6 @@ function App() {
     }
   }, [suggestion, selectedSuggestion, isTyping, typedWord])
 
-  // Update selected suggestion when index changes
-  useEffect(() => {
-    if (suggestion && suggestion.suggestions[
-      selectedSuggestionIndex
-    ]) {
-      setSelectedSuggestion(
-        suggestion.suggestions[selectedSuggestionIndex].word
-      )
-    }
-  }, [selectedSuggestionIndex, suggestion])
-
   // Reset selected index when suggestions change
   useEffect(() => {
     if (suggestion) {
@@ -176,8 +160,6 @@ function App() {
       return
     }
 
-    setIsComputing(true)
-
     logger.info('Computing suggestions', {
       historyLength: gameState.history.length,
     })
@@ -194,7 +176,6 @@ function App() {
           topSuggestion: result.suggestions[0] || null,
           remainingAnswers: result.remainingAnswers,
         })
-        setSuggestionsLoaded(true)
       })
       .catch((error: Error) => {
         // Don't log cancellation errors - they're expected
@@ -204,9 +185,6 @@ function App() {
           })
         }
         setSuggestion(null)
-      })
-      .finally(() => {
-        setIsComputing(false)
       })
   }, [gameState, wordlistsLoaded, useStrictGuesses])
 
@@ -293,7 +271,7 @@ function App() {
         : 'bg-white text-gray-900'
     }`}>
       {/* First Load Blurred Loading Screen */}
-      {!suggestionsLoaded && (
+      {!suggestion && (
         <div className={`absolute inset-0 flex items-center
           justify-center backdrop-blur-lg z-50 ${
           isDarkMode
@@ -347,30 +325,25 @@ function App() {
 
       <div className="flex gap-8 items-center">
         {/* Game Board */}
-        <div ref={boardRef}>
-          <GameBoard
-            guesses={gameState.history}
-            currentRowIndex={gameState.history.length}
-            suggestion={selectedSuggestion}
-            isTyping={isTyping}
-            typedWord={typedWord}
-            onGuessSubmit={handleGuessSubmit}
-            onTypingChange={handleTypingChange}
-            onTileClick={handleTileClick}
-            isDarkMode={isDarkMode}
-            puzzleState={puzzleState || undefined}
-          />
-        </div>
+        <GameBoard
+          guesses={gameState.history}
+          currentRowIndex={gameState.history.length}
+          suggestion={selectedSuggestion}
+          isTyping={isTyping}
+          typedWord={typedWord}
+          onGuessSubmit={handleGuessSubmit}
+          onTypingChange={handleTypingChange}
+          onTileClick={handleTileClick}
+          isDarkMode={isDarkMode}
+          puzzleState={puzzleState || undefined}
+        />
 
         {/* Suggestion Panel */}
         <SuggestionPanel
           suggestion={
             suggestion || defaultSuggestion
           }
-          isLoading={isComputing}
           isDarkMode={isDarkMode}
-          boardHeight={boardHeight}
-          onPuzzleStateChange={setPuzzleState}
           useStrictGuesses={useStrictGuesses}
           onUseStrictGuessesChange={setUseStrictGuesses}
           selectedSuggestionIndex={selectedSuggestionIndex}
@@ -380,7 +353,7 @@ function App() {
       {/* Instruction Panel */}
       <InstructionPanel
         isDarkMode={isDarkMode}
-        puzzleState={puzzleState}
+        suggestion={suggestion}
       />
 
       {/* Footer */}

@@ -10,10 +10,7 @@ const MAX_SUGGESTIONS = 5
 
 interface SuggestionPanelProps {
   suggestion?: Suggestion
-  isLoading?: boolean
-  error?: string
   isDarkMode?: boolean
-  boardHeight?: number
   onPuzzleStateChange?: (state: PuzzleState | null) => void
   useStrictGuesses?: boolean
   onUseStrictGuessesChange?: (value: boolean) => void
@@ -91,10 +88,7 @@ function SuggestionRow({
 
 export function SuggestionPanel({
   suggestion,
-  isLoading = false,
-  error,
   isDarkMode = false,
-  boardHeight = 0,
   onPuzzleStateChange,
   useStrictGuesses = true,
   onUseStrictGuessesChange,
@@ -111,26 +105,12 @@ export function SuggestionPanel({
 
   return (
     <div
-      className={`p-4 flex flex-col
-        w-64 ${
+      className={`p-4 flex flex-col w-64 ${
         isDarkMode
           ? 'bg-gray-800'
           : 'bg-gray-50'
       }`}
-      style={{
-        height: boardHeight > 0 ? `${boardHeight}px` : 'auto',
-      }}
     >
-
-
-      {error && (
-        <div
-          className="p-3 bg-red-50 rounded-md border
-            border-red-200 mb-4"
-        >
-          <p className="text-red-700 text-sm">{error}</p>
-        </div>
-      )}
 
       {/* Strict Guesses Toggle */}
       <div className="mb-4 flex items-center
@@ -175,26 +155,6 @@ export function SuggestionPanel({
           />
         </button>
       </div>
-
-      {isLoading && !suggestion && (
-        <div className="flex flex-col gap-3 items-center
-          justify-center flex-1">
-          <div
-            className="animate-spin h-6 w-6 border-2
-              border-blue-500 border-t-transparent
-              rounded-full"
-          ></div>
-          <p
-            className={`text-sm ${
-              isDarkMode
-                ? 'text-gray-400'
-                : 'text-gray-600'
-            }`}
-          >
-            Fetching suggestions...
-          </p>
-        </div>
-      )}
 
       {suggestion && (
         <div className="flex flex-col flex-1 min-h-0">

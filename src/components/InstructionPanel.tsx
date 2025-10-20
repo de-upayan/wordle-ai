@@ -1,14 +1,19 @@
-import { PuzzleState } from '../types/index'
+import { Suggestion, PuzzleState } from '../types/index'
+import { getPuzzleState } from '../utils/puzzleStateStyles'
 
 interface InstructionPanelProps {
   isDarkMode?: boolean
-  puzzleState?: PuzzleState | null
+  suggestion?: Suggestion | null
 }
 
 export function InstructionPanel({
   isDarkMode = false,
-  puzzleState,
+  suggestion,
 }: InstructionPanelProps) {
+  const puzzleState = suggestion
+    ? getPuzzleState(suggestion.remainingAnswers)
+    : null
+
   const getInstructionText = (): string => {
     // Check puzzle state
     if (puzzleState === PuzzleState.INVALID) {

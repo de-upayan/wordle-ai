@@ -11,6 +11,12 @@ import {
   Suggestion,
 } from './types/index'
 import { getPuzzleState } from './utils/puzzleStateStyles'
+import {
+  loadDarkModeCookie,
+  saveDarkModeCookie,
+  loadStrictGuessesCookie,
+  saveStrictGuessesCookie,
+} from './utils/cookies'
 
 const logger = createLogger('App')
 
@@ -41,13 +47,19 @@ function App() {
   const [isMobile, setIsMobile] = useState(isMobileDevice())
   const [isTyping, setIsTyping] = useState(false)
   const [typedWord, setTypedWord] = useState('')
-  const [isDarkMode, setIsDarkMode] = useState(
-    getSystemThemePreference()
-  )
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedDarkMode = loadDarkModeCookie()
+    return savedDarkMode !== null
+      ? savedDarkMode
+      : getSystemThemePreference()
+  })
   const [suggestion, setSuggestion] = useState<Suggestion | null>(
     null
   )
-  const [useStrictGuesses, setUseStrictGuesses] = useState(true)
+  const [useStrictGuesses, setUseStrictGuesses] = useState(() => {
+    const savedStrictGuesses = loadStrictGuessesCookie()
+    return savedStrictGuesses !== null ? savedStrictGuesses : true
+  })
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] =
     useState(0)
   const [isLoadingSuggestions, setIsLoadingSuggestions] =
@@ -72,7 +84,13 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark')
     }
+    saveDarkModeCookie(isDarkMode)
   }, [isDarkMode])
+
+  // Save strict guesses preference to cookie
+  useEffect(() => {
+    saveStrictGuessesCookie(useStrictGuesses)
+  }, [useStrictGuesses])
 
   // Global keyboard handler
   useEffect(() => {

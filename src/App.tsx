@@ -31,6 +31,8 @@ function App() {
     useState('')
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] =
     useState(0)
+  const [suggestionsLoaded, setSuggestionsLoaded] =
+    useState(false)
   const boardRef = useRef<HTMLDivElement>(null)
   const { gameState, addGuess, setFeedback } = useGameState()
   const { answersList, guessesList, isLoaded: wordlistsLoaded } =
@@ -192,6 +194,7 @@ function App() {
           topSuggestion: result.suggestions[0] || null,
           remainingAnswers: result.remainingAnswers,
         })
+        setSuggestionsLoaded(true)
       })
       .catch((error: Error) => {
         // Don't log cancellation errors - they're expected
@@ -284,11 +287,27 @@ function App() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300
-      flex flex-col items-center justify-center ${
+      flex flex-col items-center justify-center relative ${
       isDarkMode
         ? 'bg-gray-900 text-white'
         : 'bg-white text-gray-900'
     }`}>
+      {/* First Load Blurred Loading Screen */}
+      {!suggestionsLoaded && (
+        <div className={`absolute inset-0 flex items-center
+          justify-center backdrop-blur-lg z-50 ${
+          isDarkMode
+            ? 'bg-gray-900/60'
+            : 'bg-white/60'
+        }`}>
+          <div
+            className="animate-spin h-16 w-16 border-8
+              border-blue-500 border-t-transparent
+              rounded-full"
+          ></div>
+        </div>
+      )}
+
       {/* Dark Mode Toggle */}
       <div className="absolute top-8 right-8">
         <button

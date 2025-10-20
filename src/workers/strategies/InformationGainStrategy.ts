@@ -62,12 +62,13 @@ export class InformationGainStrategy implements SolvingStrategy {
 
   /**
    * Solve using information gain strategy - computes top 5 suggestions
+   * Runs in isolated worker thread that can be terminated immediately
    */
-  solve(
+  async solve(
     gameState: GameState,
     answersList: string[],
     guessesList: string[]
-  ): SolveResult {
+  ): Promise<SolveResult> {
     // Filter possible answers based on game state
     const possibleAnswers = filterCandidateWords(
       gameState,

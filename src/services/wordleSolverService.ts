@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import { GameState, SuggestionItem } from '../types/index'
 import { createLogger } from '../utils/logger'
 
@@ -6,6 +7,7 @@ const logger = createLogger('WordleSolverService')
 export interface SuggestionResult {
   suggestions: SuggestionItem[]
   remainingAnswers: number
+  requestId: string
 }
 
 /**
@@ -15,8 +17,11 @@ export interface SuggestionResult {
 export class WordleSolverService {
   private worker: Worker | null = null
   private initPromise: Promise<void> | null = null
-  private answersList: string[] = []
-  private guessesList: string[] = []
+  private currentRequestId: string | null = null
+  private requestHandlers: Map<
+    string,
+    (e: MessageEvent) => void
+  > = new Map()
 
   /**
    * Initialize the service with wordlists
@@ -60,10 +65,6 @@ export class WordleSolverService {
 
         this.worker.addEventListener('message', initHandler)
 
-        // Send INIT message
-        this.answersList = answersList
-        this.guessesList = guessesList
-
         logger.info('Sending INIT message to worker', {
           answersCount: answersList.length,
           guessesCount: guessesList.length,
@@ -88,9 +89,43 @@ export class WordleSolverService {
   }
 
   /**
+   * Generate a unique request ID
+   */
+  private generateRequestId(): string {
+    return uuidv4()
+  }
+
+  /**
+   * Cancel the current request and clean up its handler
+   */
+  private cancelCurrentRequest(): void {
+    if (this.currentRequestId) {
+      const handler = this.requestHandlers.get(
+        this.currentRequestId
+      )
+      if (handler && this.worker) {
+        this.worker.removeEventListener('message', handler)
+      }
+      this.requestHandlers.delete(this.currentRequestId)
+
+      logger.info('Cancelled previous request', {
+        requestId: this.currentRequestId,
+      })
+
+      // Send CANCEL message to worker
+      if (this.worker) {
+        this.worker.postMessage({
+          type: 'CANCEL',
+          requestId: this.currentRequestId,
+        })
+      }
+    }
+  }
+
+  /**
    * Compute suggestions for a game state
    * Returns a promise that resolves with suggestions and remaining answers
-   * Includes timeout handling
+   * Includes timeout handling and cancellation of stale requests
    * Note: Initial computation with all 2315 answers can take 10-20 seconds
    */
   async computeSuggestions(
@@ -106,48 +141,68 @@ export class WordleSolverService {
       await this.initPromise
     }
 
+    // Cancel any previous request
+    this.cancelCurrentRequest()
+
+    // Generate new request ID
+    const requestId = this.generateRequestId()
+    this.currentRequestId = requestId
+
     logger.info('Computing suggestions', {
       historyLength: gameState.history.length,
+      requestId,
     })
 
     const computePromise = new Promise<SuggestionResult>(
       (resolve, reject) => {
         const handler = (e: MessageEvent) => {
+          // Only process if this is for the current request
+          if (e.data.requestId !== requestId) {
+            return
+          }
+
           if (e.data.type === 'SOLVE_COMPLETE') {
             logger.info('Suggestions computed', {
               count: e.data.suggestions.length,
               remainingAnswers: e.data.remainingAnswers,
+              requestId,
             })
             this.worker!.removeEventListener('message', handler)
+            this.requestHandlers.delete(requestId)
             resolve({
               suggestions: e.data.suggestions,
               remainingAnswers: e.data.remainingAnswers,
+              requestId,
             })
           } else if (e.data.type === 'ERROR') {
             logger.error('Solver error', {
               error: e.data.error,
+              requestId,
             })
             this.worker!.removeEventListener('message', handler)
+            this.requestHandlers.delete(requestId)
             reject(new Error(e.data.error))
           }
         }
 
+        this.requestHandlers.set(requestId, handler)
         this.worker!.addEventListener('message', handler)
 
-        // Send SOLVE message
+        // Send SOLVE message with request ID
         this.worker!.postMessage({
           type: 'SOLVE',
           gameState,
+          requestId,
         })
       }
     )
 
     // Race with timeout
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error('Solver computation timeout')),
-        timeoutMs
-      )
+      setTimeout(() => {
+        logger.warn('Solver computation timeout', { requestId })
+        reject(new Error('Solver computation timeout'))
+      }, timeoutMs)
     )
 
     return Promise.race([computePromise, timeoutPromise])

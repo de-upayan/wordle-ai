@@ -19,6 +19,6 @@ export interface SolvingStrategy {
     gameState: GameState,
     answersList: string[],
     guessesList: string[]
-  ): SolveResult
+  ): Promise<SolveResult>
 }
 

@@ -1,25 +1,23 @@
 /**
  * Web Worker for Wordle AI solving algorithm
- * Runs in background thread to prevent UI blocking
- * Communicates with main thread via postMessage
- * Uses Strategy pattern for pluggable solving strategies
+ * Spawns separate computation workers for each solve request
+ * Terminates computation workers immediately on cancel
  */
-
-import { InformationGainStrategy } from './strategies/InformationGainStrategy'
-import { SolvingStrategy } from './strategies/SolvingStrategy'
 
 interface WorkerState {
   answersList: string[]
   guessesList: string[]
   initialized: boolean
-  strategy: SolvingStrategy | null
+  currentRequestId: string | null
+  currentComputeWorker: Worker | null
 }
 
 const state: WorkerState = {
   answersList: [],
   guessesList: [],
   initialized: false,
-  strategy: null,
+  currentRequestId: null,
+  currentComputeWorker: null,
 }
 
 /**
@@ -27,34 +25,71 @@ const state: WorkerState = {
  */
 self.onmessage = (event: MessageEvent) => {
   try {
-    const { type, answersList, guessesList, gameState } = event.data
+    const {
+      type,
+      answersList,
+      guessesList,
+      gameState,
+      requestId,
+    } = event.data
 
     if (type === 'INIT') {
       state.answersList = answersList
       state.guessesList = guessesList
-      // Initialize with InformationGainStrategy
-      state.strategy = new InformationGainStrategy()
       state.initialized = true
 
       self.postMessage({
         type: 'INIT_COMPLETE',
       })
     } else if (type === 'SOLVE') {
-      if (!state.initialized || !state.strategy) {
+      if (!state.initialized) {
         throw new Error('Worker not initialized')
       }
 
-      const result = state.strategy.solve(
-        gameState,
-        state.answersList,
-        state.guessesList
+      // Terminate any previous computation worker
+      if (state.currentComputeWorker) {
+        state.currentComputeWorker.terminate()
+      }
+
+      // Create new computation worker for this request
+      state.currentRequestId = requestId
+      state.currentComputeWorker = new Worker(
+        new URL('./solveComputation.worker.ts', import.meta.url),
+        { type: 'module' }
       )
 
-      self.postMessage({
-        type: 'SOLVE_COMPLETE',
-        suggestions: result.suggestions,
-        remainingAnswers: result.remainingAnswers,
+      // Set up message handler for computation results
+      const computeHandler = (event: MessageEvent) => {
+        // Only process if this is still the current request
+        if (state.currentRequestId === requestId) {
+          self.postMessage(event.data)
+        }
+        // Clean up the worker after receiving result
+        if (state.currentComputeWorker) {
+          state.currentComputeWorker.terminate()
+          state.currentComputeWorker = null
+        }
+      }
+
+      state.currentComputeWorker.addEventListener(
+        'message',
+        computeHandler
+      )
+
+      // Send computation request to worker
+      state.currentComputeWorker.postMessage({
+        gameState,
+        answersList: state.answersList,
+        guessesList: state.guessesList,
+        requestId,
       })
+    } else if (type === 'CANCEL') {
+      // Terminate the computation worker immediately
+      if (state.currentRequestId === requestId &&
+          state.currentComputeWorker) {
+        state.currentComputeWorker.terminate()
+        state.currentComputeWorker = null
+      }
     } else {
       throw new Error(`Unknown message type: ${type}`)
     }

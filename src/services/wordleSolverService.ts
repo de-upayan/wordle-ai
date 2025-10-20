@@ -159,7 +159,8 @@ export class WordleSolverService {
   async computeSuggestions(
     gameState: GameState,
     useStrictGuesses: boolean = true,
-    timeoutMs: number = 30000
+    timeoutMs: number = 30000,
+    typedWord: string = ''
   ): Promise<SuggestionResult> {
     if (!this.worker) {
       throw new Error('Worker not initialized. Call initialize() first.')
@@ -247,6 +248,7 @@ export class WordleSolverService {
           gameState,
           useStrictGuesses,
           requestId,
+          typedWord,
         })
       }
     )

@@ -8,8 +8,6 @@ interface GameBoardProps {
   suggestion?: string
   isTyping: boolean
   typedWord: string
-  onGuessSubmit: (word: string) => void
-  onTypingChange: (isTyping: boolean, word: string) => void
   onTileClick?: (rowIndex: number, tileIndex: number) => void
   isDarkMode?: boolean
   puzzleState?: PuzzleState
@@ -21,8 +19,6 @@ export function GameBoard({
   suggestion = '',
   isTyping,
   typedWord,
-  onGuessSubmit,
-  onTypingChange,
   onTileClick,
   isDarkMode = false,
   puzzleState,

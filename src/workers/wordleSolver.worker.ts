@@ -32,6 +32,7 @@ self.onmessage = (event: MessageEvent) => {
       gameState,
       useStrictGuesses,
       requestId,
+      typedWord,
     } = event.data
 
     if (type === 'INIT') {
@@ -80,6 +81,7 @@ self.onmessage = (event: MessageEvent) => {
         guessesList: state.guessesList,
         useStrictGuesses,
         requestId,
+        typedWord,
       })
     } else if (type === 'CANCEL') {
       // Terminate the computation worker immediately

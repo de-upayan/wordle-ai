@@ -6,7 +6,7 @@
 
 import { StrictGuessesStrategy } from './strategies/StrictGuessesStrategy'
 import { AllGuessesStrategy } from './strategies/AllGuessesStrategy'
-import { GameState } from './wordleUtils'
+import { GameState, filterWordsByPrefix } from './wordleUtils'
 
 interface ComputeMessage {
   gameState: GameState
@@ -14,6 +14,7 @@ interface ComputeMessage {
   guessesList: string[]
   useStrictGuesses: boolean
   requestId: string
+  typedWord?: string
 }
 
 /**
@@ -27,7 +28,14 @@ self.onmessage = async (event: MessageEvent<ComputeMessage>) => {
       guessesList,
       useStrictGuesses,
       requestId,
+      typedWord = '',
     } = event.data
+
+    // Filter guesses by typed word prefix
+    const filteredGuesses = filterWordsByPrefix(
+      guessesList,
+      typedWord
+    )
 
     const strategy = useStrictGuesses
       ? new StrictGuessesStrategy()
@@ -35,7 +43,7 @@ self.onmessage = async (event: MessageEvent<ComputeMessage>) => {
     const result = await strategy.solve(
       gameState,
       answersList,
-      guessesList
+      filteredGuesses
     )
 
     self.postMessage({

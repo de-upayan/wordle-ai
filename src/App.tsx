@@ -153,7 +153,7 @@ function App() {
     }
   }, [wordlistsLoaded, answersList, guessesList])
 
-  // Compute suggestions when game state changes
+  // Compute suggestions when game state or typed word changes
   useEffect(() => {
     if (!wordlistsLoaded) {
       logger.debug('Wordlists not loaded yet, skipping computation')
@@ -162,10 +162,11 @@ function App() {
 
     logger.info('Computing suggestions', {
       historyLength: gameState.history.length,
+      typedWord,
     })
 
     wordleSolverService
-      .computeSuggestions(gameState, useStrictGuesses)
+      .computeSuggestions(gameState, useStrictGuesses, 30000, typedWord)
       .then((result) => {
         logger.debug('Suggestions computed', {
           count: result.suggestions.length,
@@ -186,7 +187,7 @@ function App() {
         }
         setSuggestion(null)
       })
-  }, [gameState, wordlistsLoaded, useStrictGuesses])
+  }, [gameState, wordlistsLoaded, useStrictGuesses, typedWord])
 
   // Log game state changes
   useEffect(() => {
@@ -331,8 +332,6 @@ function App() {
           suggestion={selectedSuggestion}
           isTyping={isTyping}
           typedWord={typedWord}
-          onGuessSubmit={handleGuessSubmit}
-          onTypingChange={handleTypingChange}
           onTileClick={handleTileClick}
           isDarkMode={isDarkMode}
           puzzleState={puzzleState || undefined}

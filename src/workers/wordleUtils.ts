@@ -145,3 +145,23 @@ export function filterCandidateWords(
   })
 }
 
+/**
+ * Filter words by prefix
+ * @param words - List of words to filter
+ * @param prefix - The prefix to match (case-insensitive)
+ * @returns Filtered list of words starting with the prefix
+ */
+export function filterWordsByPrefix(
+  words: string[],
+  prefix: string
+): string[] {
+  if (!prefix) {
+    return words
+  }
+
+  const lowerPrefix = prefix.toLowerCase()
+  return words.filter((word) =>
+    word.toLowerCase().startsWith(lowerPrefix)
+  )
+}
+

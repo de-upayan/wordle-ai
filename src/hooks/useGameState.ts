@@ -71,6 +71,15 @@ export function useGameState() {
   }, [gameState.history, currentRowIndex])
 
   /**
+   * Remove the last guess from history
+   */
+  const undoGuess = useCallback(() => {
+    setGameState((prev) => ({
+      history: prev.history.slice(0, -1),
+    }))
+  }, [])
+
+  /**
    * Reset game to initial state
    */
   const reset = useCallback(() => {
@@ -82,6 +91,7 @@ export function useGameState() {
     addGuess,
     setFeedback,
     reset,
+    undoGuess,
     isRowComplete,
     currentRowIndex,
   }

@@ -45,7 +45,8 @@ function App() {
   const puzzleState = suggestion
     ? getPuzzleState(suggestion.remainingAnswers)
     : null
-  const { gameState, addGuess, setFeedback } = useGameState()
+  const { gameState, addGuess, setFeedback, undoGuess } =
+    useGameState()
   const { answersList, guessesList, isLoaded: wordlistsLoaded } =
     useWordlists()
 
@@ -71,6 +72,16 @@ function App() {
         e.preventDefault()
         if (selectedSuggestion.length === 5) {
           handleGuessSubmit(selectedSuggestion)
+        }
+        return
+      }
+
+      // Ctrl+Z or Cmd+Z: undo last guess
+      if ((e.ctrlKey || e.metaKey) && key === 'Z') {
+        e.preventDefault()
+        if (gameState.history.length > 0) {
+          undoGuess()
+          handleTypingChange(false, '')
         }
         return
       }
@@ -135,7 +146,8 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown)
     }
-  }, [suggestion, selectedSuggestion, isTyping, typedWord])
+  }, [suggestion, selectedSuggestion, isTyping, typedWord,
+    gameState.history.length, undoGuess])
 
   // Reset selected index when suggestions change
   useEffect(() => {

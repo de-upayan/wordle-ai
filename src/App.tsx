@@ -53,9 +53,7 @@ function App() {
       ? savedDarkMode
       : getSystemThemePreference()
   })
-  const [suggestion, setSuggestion] = useState<Suggestion | null>(
-    null
-  )
+  const [suggestion, setSuggestion] = useState<Suggestion | undefined>()
   const [useStrictGuesses, setUseStrictGuesses] = useState(() => {
     const savedStrictGuesses = loadStrictGuessesCookie()
     return savedStrictGuesses !== null ? savedStrictGuesses : true
@@ -236,7 +234,7 @@ function App() {
       .computeSuggestions(gameState, useStrictGuesses, 30000, typedWord)
 
     setIsLoadingSuggestions(true)
-    setSuggestion(null)
+    setSuggestion(undefined)
 
     computePromise
       .then((result) => {
@@ -258,7 +256,7 @@ function App() {
             error: error.message,
           })
         }
-        setSuggestion(null)
+        setSuggestion(undefined)
       })
   }, [gameState, wordlistsLoaded, useStrictGuesses, typedWord, isMobile])
 
@@ -328,13 +326,6 @@ function App() {
       rowIndex,
       feedback: updatedFeedback,
     })
-  }
-
-  // Default suggestion when no data is available
-  const defaultSuggestion: Suggestion = {
-    suggestions: [],
-    topSuggestion: null,
-    remainingAnswers: answersList.length,
   }
 
   return (
@@ -432,9 +423,7 @@ function App() {
 
         {/* Suggestion Panel */}
         <SuggestionPanel
-          suggestion={
-            suggestion || defaultSuggestion
-          }
+          suggestion={suggestion}
           isDarkMode={isDarkMode}
           useStrictGuesses={useStrictGuesses}
           onUseStrictGuessesChange={setUseStrictGuesses}

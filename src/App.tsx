@@ -186,9 +186,12 @@ function App() {
   useEffect(() => {
     if (suggestion) {
       const MAX_SUGGESTIONS = 5
-      const maxIndex = Math.min(
-        MAX_SUGGESTIONS - 1,
-        suggestion.suggestions.length - 1
+      const maxIndex = Math.max(
+        0,
+        Math.min(
+          MAX_SUGGESTIONS - 1,
+          suggestion.suggestions.length - 1
+        )
       )
       if (selectedSuggestionIndex > maxIndex) {
         setSelectedSuggestionIndex(maxIndex)

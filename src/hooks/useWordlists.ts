@@ -5,8 +5,8 @@ const logger = createLogger('useWordlists')
 
 /**
  * Custom hook for loading and caching Wordle wordlists
- * Loads answers.txt and guesses.txt from public/wordlists/
- * on app startup and caches them in state
+ * Loads sowpods_5.txt from public/wordlists/ for both answers
+ * and guesses on app startup and caches them in state
  */
 export function useWordlists() {
   const [answersList, setAnswersList] = useState<string[]>([])
@@ -17,47 +17,32 @@ export function useWordlists() {
   useEffect(() => {
     const loadWordlists = async () => {
       try {
-        logger.info('Loading wordlists from public/wordlists/')
+        logger.info('Loading SOWPODS wordlist from public/wordlists/')
 
-        // Fetch both wordlists in parallel
-        const [answersResponse, guessesResponse] = await Promise.all([
-          fetch('/wordlists/answers.txt'),
-          fetch('/wordlists/guesses.txt'),
-        ])
+        // Fetch SOWPODS wordlist
+        const response = await fetch('/wordlists/sowpods_5.txt')
 
-        if (!answersResponse.ok) {
+        if (!response.ok) {
           throw new Error(
-            `Failed to load answers.txt: ${answersResponse.statusText}`
+            `Failed to load sowpods_5.txt: ${response.statusText}`
           )
         }
 
-        if (!guessesResponse.ok) {
-          throw new Error(
-            `Failed to load guesses.txt: ${guessesResponse.statusText}`
-          )
-        }
+        // Parse wordlist
+        const text = await response.text()
 
-        // Parse wordlists
-        const answersText = await answersResponse.text()
-        const guessesText = await guessesResponse.text()
-
-        const answers = answersText
+        const words = text
           .split('\n')
           .map((w) => w.trim().toUpperCase())
           .filter((w) => w.length === 5)
 
-        const guesses = guessesText
-          .split('\n')
-          .map((w) => w.trim().toUpperCase())
-          .filter((w) => w.length === 5)
-
-        logger.info('Wordlists loaded successfully', {
-          answersCount: answers.length,
-          guessesCount: guesses.length,
+        logger.info('SOWPODS_5 wordlist loaded successfully', {
+          wordCount: words.length,
         })
 
-        setAnswersList(answers)
-        setGuessesList(guesses)
+        // Use same wordlist for both answers and guesses
+        setAnswersList(words)
+        setGuessesList(words)
         setIsLoaded(true)
       } catch (err) {
         const errorMessage =

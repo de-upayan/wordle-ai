@@ -44,11 +44,8 @@ export class WorkerPool<T, R> {
    */
   private getOptimalPoolSize(): number {
     const cores = navigator.hardwareConcurrency || 4
-    // Leave 1 core for main thread, cap at 8
-    const optimalSize = Math.min(
-      Math.max(cores - 1, 1),
-      8
-    )
+    // Leave 1 core for main thread, use all remaining cores
+    const optimalSize = Math.max(cores - 1, 1)
     console.log(
       `[WorkerPool] Detected ${cores} CPU cores, ` +
         `using ${optimalSize} workers`

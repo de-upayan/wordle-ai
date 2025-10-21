@@ -249,6 +249,7 @@ function App() {
           count: result.suggestions.length,
           remainingAnswers: result.remainingAnswers,
         })
+        logger.debug('Suggestion result:', result)
         setSuggestion({
           suggestions: result.suggestions,
           topSuggestion: result.suggestions[0] || null,

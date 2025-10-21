@@ -57,7 +57,7 @@ function App() {
   const [suggestion, setSuggestion] = useState<Suggestion | undefined>()
   const [useStrictGuesses, setUseStrictGuesses] = useState(() => {
     const savedStrictGuesses = loadStrictGuessesCookie()
-    return savedStrictGuesses !== null ? savedStrictGuesses : true
+    return savedStrictGuesses !== null ? savedStrictGuesses : false
   })
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] =
     useState(0)

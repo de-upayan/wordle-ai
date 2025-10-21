@@ -186,7 +186,7 @@ export class WordleSolverService {
    */
   async computeSuggestions(
     gameState: GameState,
-    useStrictGuesses: boolean = true,
+    useStrictGuesses: boolean = false,
     timeoutMs: number = 30000,
     typedWord: string = ''
   ): Promise<SuggestionResult> {

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { LetterTile, TileColor } from './LetterTile'
 import { GuessEntry, PuzzleState } from '../types/index'
+import { GAME_ROWS, GAME_COLS } from '../constants'
 
 interface GameBoardProps {
   guesses: GuessEntry[]
@@ -39,7 +40,7 @@ export function GameBoard({
     return (
       <div key={rowIndex} className="flex gap-1 sm:gap-1.5
         lg:gap-2">
-        {Array(5)
+        {Array(GAME_COLS)
           .fill(null)
           .map((_, tileIndex) => {
             const letter = displayWord[tileIndex] || ''
@@ -101,7 +102,7 @@ export function GameBoard({
       className="flex flex-col gap-1 sm:gap-1.5 lg:gap-2
         outline-none"
     >
-      {Array(6)
+      {Array(GAME_ROWS)
         .fill(null)
         .map((_, i) => renderRow(i))}
     </div>

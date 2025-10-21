@@ -2,9 +2,11 @@
  * Cookie utility functions for persisting user preferences
  */
 
-const DARK_MODE_COOKIE = 'wordle_ai_dark_mode'
-const STRICT_GUESSES_COOKIE = 'wordle_ai_strict_guesses'
-const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 // 1 year in seconds
+import {
+  DARK_MODE_COOKIE,
+  STRICT_GUESSES_COOKIE,
+  COOKIE_MAX_AGE,
+} from '../constants'
 
 /**
  * Set a cookie with the given name and value

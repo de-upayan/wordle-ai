@@ -17,6 +17,7 @@ import {
   loadStrictGuessesCookie,
   saveStrictGuessesCookie,
 } from './utils/cookies'
+import { MAX_SUGGESTIONS, SOLVER_TIMEOUT_MS } from './constants'
 
 const logger = createLogger('App')
 
@@ -151,7 +152,6 @@ function App() {
         return
       }
 
-      const MAX_SUGGESTIONS = 5
       const maxIndex = Math.min(
         MAX_SUGGESTIONS - 1,
         suggestion.suggestions.length - 1
@@ -185,7 +185,6 @@ function App() {
   // Clamp selected index when suggestions list changes
   useEffect(() => {
     if (suggestion) {
-      const MAX_SUGGESTIONS = 5
       const maxIndex = Math.max(
         0,
         Math.min(
@@ -234,7 +233,12 @@ function App() {
     })
 
     const computePromise = wordleSolverService
-      .computeSuggestions(gameState, useStrictGuesses, 30000, typedWord)
+      .computeSuggestions(
+        gameState,
+        useStrictGuesses,
+        SOLVER_TIMEOUT_MS,
+        typedWord
+      )
 
     setIsLoadingSuggestions(true)
     setSuggestion(undefined)

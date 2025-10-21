@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createLogger } from '../utils/logger'
+import { WORDLIST_PATH, WORD_LENGTH } from '../constants'
 
 const logger = createLogger('useWordlists')
 
@@ -20,7 +21,7 @@ export function useWordlists() {
         logger.info('Loading SOWPODS wordlist from public/wordlists/')
 
         // Fetch SOWPODS wordlist
-        const response = await fetch('/wordlists/sowpods_5.txt')
+        const response = await fetch(WORDLIST_PATH)
 
         if (!response.ok) {
           throw new Error(
@@ -34,7 +35,7 @@ export function useWordlists() {
         const words = text
           .split('\n')
           .map((w) => w.trim().toUpperCase())
-          .filter((w) => w.length === 5)
+          .filter((w) => w.length === WORD_LENGTH)
 
         logger.info('SOWPODS_5 wordlist loaded successfully', {
           wordCount: words.length,

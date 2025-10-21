@@ -1,4 +1,5 @@
 import { PuzzleState } from '../types/index'
+import { TILE_COLORS } from '../constants'
 
 export type TileColor = 'empty' | 'green' | 'yellow' | 'gray'
 
@@ -21,9 +22,9 @@ const colorClasses: Record<TileColor, string> = {
 
 const colorStyles: Record<TileColor, React.CSSProperties> = {
   empty: {},
-  green: { backgroundColor: '#6aaa64' },
-  yellow: { backgroundColor: '#c9b458' },
-  gray: { backgroundColor: '#787c7e' },
+  green: { backgroundColor: TILE_COLORS.green },
+  yellow: { backgroundColor: TILE_COLORS.yellow },
+  gray: { backgroundColor: TILE_COLORS.gray },
 }
 
 export function LetterTile({

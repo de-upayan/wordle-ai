@@ -4,9 +4,7 @@ import {
   getPuzzleState,
   getPuzzleStateTextStyle,
 } from '../utils/puzzleStateStyles'
-
-// Maximum number of suggestions to display
-const MAX_SUGGESTIONS = 5
+import { MAX_SUGGESTIONS } from '../constants'
 
 interface SuggestionPanelProps {
   suggestion?: Suggestion

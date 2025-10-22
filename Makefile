@@ -13,4 +13,6 @@ lint:
 	npm run lint
 
 serve:
-	npx serve -s dist
+	mkdir -p /tmp/wordle-ai-serve/wordle-ai && \
+	cp -r dist/* /tmp/wordle-ai-serve/wordle-ai/ && \
+	npx serve /tmp/wordle-ai-serve -l 3000

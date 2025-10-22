@@ -20,10 +20,10 @@ WORKDIR /app
 # Install serve to serve static files
 RUN npm install -g serve
 
-# Copy built files from builder
-COPY --from=builder /app/dist ./dist
+# Copy built files from builder and structure for /wordle-ai/ path
+COPY --from=builder /app/dist ./wordle-ai
 
 EXPOSE 3000
 
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "-l", "3000"]
 

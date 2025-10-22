@@ -3,7 +3,7 @@
  */
 
 /** Wordlist configuration */
-export const WORDLIST_PATH = '/wordlists/sowpods_5.txt'
+export const WORDLIST_PATH = `${import.meta.env.BASE_URL}wordlists/sowpods_5.txt`
 export const WORD_LENGTH = 5
 
 /** Maximum number of suggestions to display to the user */

@@ -22,17 +22,5 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
-    rollupOptions: {
-      output: {
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-      },
-    },
-  },
-  optimizeDeps: {
-    exclude: ['*.worker.ts', '*.worker.js'],
-  },
-  ssr: {
-    noExternal: ['*.worker.ts', '*.worker.js'],
   },
 })

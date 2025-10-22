@@ -12,6 +12,7 @@ interface GameBoardProps {
   onTileClick?: (rowIndex: number, tileIndex: number) => void
   isDarkMode?: boolean
   puzzleState?: PuzzleState
+  shouldShake?: boolean
 }
 
 export function GameBoard({
@@ -23,6 +24,7 @@ export function GameBoard({
   onTileClick,
   isDarkMode = false,
   puzzleState,
+  shouldShake = false,
 }: GameBoardProps) {
   const boardRef = useRef<HTMLDivElement>(null)
 
@@ -38,8 +40,8 @@ export function GameBoard({
     const displayWord = isCurrentRow && isTyping ? typedWord : guess?.word || ''
 
     return (
-      <div key={rowIndex} className="flex gap-1 sm:gap-1.5
-        lg:gap-2">
+      <div key={rowIndex} className={`flex gap-1 sm:gap-1.5
+        lg:gap-2 ${isCurrentRow && shouldShake ? 'shake' : ''}`}>
         {Array(GAME_COLS)
           .fill(null)
           .map((_, tileIndex) => {

@@ -63,6 +63,8 @@ function App() {
     useState(0)
   const [isLoadingSuggestions, setIsLoadingSuggestions] =
     useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [shouldShake, setShouldShake] = useState(false)
 
   // Derive puzzle state from suggestion
   const puzzleState = suggestion
@@ -95,6 +97,11 @@ function App() {
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toUpperCase()
+
+      // Clear error message on any key press
+      if (errorMessage) {
+        setErrorMessage(null)
+      }
 
       // Shift+Enter: submit selected suggestion
       if (e.shiftKey && key === 'ENTER') {
@@ -132,8 +139,10 @@ function App() {
         const wordToSubmit = isTyping ? typedWord :
           selectedSuggestion
         if (wordToSubmit.length === 5) {
-          handleGuessSubmit(wordToSubmit)
-          handleTypingChange(false, '')
+          const isValid = handleGuessSubmit(wordToSubmit)
+          if (isValid) {
+            handleTypingChange(false, '')
+          }
         }
         return
       }
@@ -175,7 +184,7 @@ function App() {
       window.removeEventListener('keydown', handleGlobalKeyDown)
     }
   }, [suggestion, selectedSuggestion, isTyping, typedWord,
-    gameState.history.length, undoGuess])
+    gameState.history.length, undoGuess, errorMessage])
 
   // Reset selected index when new row starts
   useEffect(() => {
@@ -279,12 +288,27 @@ function App() {
     })
   }, [gameState])
 
-  const handleGuessSubmit = (word: string) => {
+  const handleGuessSubmit = (word: string): boolean => {
     logger.info('Guess submitted', { word })
+
+    // Validate word is in wordlist
+    const isValidWord = guessesList.includes(word.toUpperCase())
+    if (!isValidWord) {
+      logger.warn('Invalid word submitted', { word })
+      setErrorMessage('Uh oh! That isn\'t a valid word.')
+      setShouldShake(true)
+      // Reset shake animation after it completes
+      setTimeout(() => setShouldShake(false), 500)
+      // Return false to indicate invalid submission
+      return false
+    }
+
     const feedback: TileColor[] = Array(5).fill('gray')
     addGuess(word, feedback)
     setTypedWord('')
     setIsTyping(false)
+    // Return true to indicate valid submission
+    return true
   }
 
   const handleTypingChange = (typing: boolean, word: string) => {
@@ -427,6 +451,7 @@ function App() {
           onTileClick={handleTileClick}
           isDarkMode={isDarkMode}
           puzzleState={puzzleState || undefined}
+          shouldShake={shouldShake}
         />
 
         {/* Suggestion Panel */}
@@ -444,6 +469,7 @@ function App() {
       <InstructionPanel
         isDarkMode={isDarkMode}
         suggestion={suggestion}
+        errorMessage={errorMessage}
       />
 
       {/* Footer */}

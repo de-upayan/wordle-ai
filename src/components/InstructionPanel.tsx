@@ -4,17 +4,24 @@ import { getPuzzleState } from '../utils/puzzleStateStyles'
 interface InstructionPanelProps {
   isDarkMode?: boolean
   suggestion?: Suggestion | null
+  errorMessage?: string | null
 }
 
 export function InstructionPanel({
   isDarkMode = false,
   suggestion,
+  errorMessage,
 }: InstructionPanelProps) {
   const puzzleState = suggestion
     ? getPuzzleState(suggestion.remainingAnswers)
     : null
 
   const getInstructionText = (isMobile: boolean): string => {
+    // Show error message if present
+    if (errorMessage) {
+      return errorMessage
+    }
+
     // Check puzzle state
     if (puzzleState === PuzzleState.INVALID) {
       return isMobile

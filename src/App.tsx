@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { GameBoard } from './components/GameBoard'
 import { SuggestionPanel } from './components/SuggestionPanel'
 import { InstructionPanel } from './components/InstructionPanel'
@@ -54,7 +54,6 @@ function App() {
       ? savedDarkMode
       : getSystemThemePreference()
   })
-  const [suggestion, setSuggestion] = useState<Suggestion | undefined>()
   const [useStrictGuesses, setUseStrictGuesses] = useState(() => {
     const savedStrictGuesses = loadStrictGuessesCookie()
     return savedStrictGuesses !== null ? savedStrictGuesses : false
@@ -65,19 +64,39 @@ function App() {
     useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [shouldShake, setShouldShake] = useState(false)
+  const [allSuggestions, setAllSuggestions] = useState<
+    Suggestion | undefined
+  >()
 
-  // Derive puzzle state from suggestion
-  const puzzleState = suggestion
-    ? getPuzzleState(suggestion.remainingAnswers)
+  // Derive puzzle state from all suggestions
+  const puzzleState = allSuggestions
+    ? getPuzzleState(allSuggestions.remainingAnswers)
     : null
   const { gameState, addGuess, setFeedback, undoGuess } =
     useGameState()
   const { answersList, guessesList, isLoaded: wordlistsLoaded } =
     useWordlists()
 
-  // Derive selected suggestion from index
+  // Filter suggestions by typedWord prefix (client-side)
+  const displayedSuggestion = useMemo(() => {
+    if (!allSuggestions) return undefined
+    if (!typedWord) return allSuggestions
+
+    const prefix = typedWord.toUpperCase()
+    const filtered = allSuggestions.suggestions.filter(
+      (item) => item.word.startsWith(prefix)
+    )
+
+    return {
+      suggestions: filtered,
+      topSuggestion: filtered[0] || null,
+      remainingAnswers: allSuggestions.remainingAnswers,
+    }
+  }, [allSuggestions, typedWord])
+
+  // Derive selected suggestion from index (from displayed)
   const selectedSuggestion =
-    suggestion?.suggestions[selectedSuggestionIndex]?.word || ''
+    displayedSuggestion?.suggestions[selectedSuggestionIndex]?.word || ''
 
   useEffect(() => {
     if (isDarkMode) {
@@ -157,13 +176,14 @@ function App() {
       }
 
       // Arrow keys: navigate suggestions
-      if (!suggestion || suggestion.suggestions.length === 0) {
+      if (!displayedSuggestion ||
+        displayedSuggestion.suggestions.length === 0) {
         return
       }
 
       const maxIndex = Math.min(
         MAX_SUGGESTIONS - 1,
-        suggestion.suggestions.length - 1
+        displayedSuggestion.suggestions.length - 1
       )
 
       if (e.key === 'ArrowUp') {
@@ -183,7 +203,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown)
     }
-  }, [suggestion, selectedSuggestion, isTyping, typedWord,
+  }, [displayedSuggestion, selectedSuggestion, isTyping, typedWord,
     gameState.history.length, undoGuess, errorMessage])
 
   // Reset selected index when new row starts
@@ -193,19 +213,19 @@ function App() {
 
   // Clamp selected index when suggestions list changes
   useEffect(() => {
-    if (suggestion) {
+    if (displayedSuggestion) {
       const maxIndex = Math.max(
         0,
         Math.min(
           MAX_SUGGESTIONS - 1,
-          suggestion.suggestions.length - 1
+          displayedSuggestion.suggestions.length - 1
         )
       )
       if (selectedSuggestionIndex > maxIndex) {
         setSelectedSuggestionIndex(maxIndex)
       }
     }
-  }, [suggestion?.suggestions.length])
+  }, [displayedSuggestion?.suggestions.length, selectedSuggestionIndex])
 
   // Initialize solver service when wordlists are loaded
   // Skip entirely if on mobile device
@@ -226,7 +246,7 @@ function App() {
     }
   }, [isMobile, wordlistsLoaded, answersList, guessesList])
 
-  // Compute suggestions when game state or typed word changes
+  // Compute suggestions when game state changes
   // Skip if on mobile device
   useEffect(() => {
     if (isMobile) return
@@ -238,19 +258,16 @@ function App() {
 
     logger.info('Computing suggestions', {
       historyLength: gameState.history.length,
-      typedWord,
     })
 
     const computePromise = wordleSolverService
       .computeSuggestions(
         gameState,
         useStrictGuesses,
-        SOLVER_TIMEOUT_MS,
-        typedWord
+        SOLVER_TIMEOUT_MS
       )
 
     setIsLoadingSuggestions(true)
-    setSuggestion(undefined)
 
     computePromise
       .then((result) => {
@@ -259,7 +276,7 @@ function App() {
           remainingAnswers: result.remainingAnswers,
         })
         logger.debug('Suggestion result:', result)
-        setSuggestion({
+        setAllSuggestions({
           suggestions: result.suggestions,
           topSuggestion: result.suggestions[0] || null,
           remainingAnswers: result.remainingAnswers,
@@ -273,9 +290,9 @@ function App() {
             error: error.message,
           })
         }
-        setSuggestion(undefined)
+        setAllSuggestions(undefined)
       })
-  }, [gameState, wordlistsLoaded, useStrictGuesses, typedWord, isMobile])
+  }, [gameState, wordlistsLoaded, useStrictGuesses, isMobile])
 
   // Log game state changes
   useEffect(() => {
@@ -456,7 +473,7 @@ function App() {
 
         {/* Suggestion Panel */}
         <SuggestionPanel
-          suggestion={suggestion}
+          suggestion={displayedSuggestion}
           isDarkMode={isDarkMode}
           useStrictGuesses={useStrictGuesses}
           onUseStrictGuessesChange={setUseStrictGuesses}
@@ -468,7 +485,7 @@ function App() {
       {/* Instruction Panel */}
       <InstructionPanel
         isDarkMode={isDarkMode}
-        suggestion={suggestion}
+        suggestion={allSuggestions}
         errorMessage={errorMessage}
       />
 

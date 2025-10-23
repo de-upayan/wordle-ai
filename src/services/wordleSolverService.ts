@@ -187,8 +187,7 @@ export class WordleSolverService {
   async computeSuggestions(
     gameState: GameState,
     useStrictGuesses: boolean = false,
-    timeoutMs: number = 30000,
-    typedWord: string = ''
+    timeoutMs: number = 30000
   ): Promise<SuggestionResult> {
     if (!this.worker) {
       throw new Error('Worker not initialized. Call initialize() first.')
@@ -217,11 +216,7 @@ export class WordleSolverService {
         this.requestRejects.set(requestId, reject)
 
         // Return hardcoded initial suggestions if gameState is empty
-        // and no typed word
-        if (
-          gameState.history.length === 0 &&
-          typedWord === ''
-        ) {
+        if (gameState.history.length === 0) {
           logger.info('Returning hardcoded initial suggestions', {
             requestId,
           })
@@ -293,7 +288,6 @@ export class WordleSolverService {
           gameState,
           useStrictGuesses,
           requestId,
-          typedWord,
         })
       }
     )

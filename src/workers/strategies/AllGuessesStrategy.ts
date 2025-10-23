@@ -65,8 +65,8 @@ export class AllGuessesStrategy implements SolvingStrategy {
       possibleAnswers
     )
 
-    // Return top 5 suggestions
-    const suggestions = allScores.slice(0, 5)
+    // Return all suggestions ranked by score
+    const suggestions = allScores
 
     return {
       suggestions,

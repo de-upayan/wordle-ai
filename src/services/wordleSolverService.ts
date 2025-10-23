@@ -1,36 +1,9 @@
 import { v4 as uuidv4 } from 'uuid'
 import { GameState, SuggestionItem } from '../types/index'
 import { createLogger } from '../utils/logger'
+import initialSuggestionsData from '../data/initialSuggestions.json'
 
 const logger = createLogger('WordleSolverService')
-
-// Hardcoded initial suggestions to avoid expensive worker
-// computation on first load
-const INITIAL_SUGGESTIONS_DATA = {
-  suggestions: [
-    {
-      word: 'TARES',
-      score: 6.2062748595161645,
-    },
-    {
-      word: 'LARES',
-      score: 6.158746001689288,
-    },
-    {
-      word: 'RALES',
-      score: 6.124002060512287,
-    },
-    {
-      word: 'RATES',
-      score: 6.108818670257293,
-    },
-    {
-      word: 'TERAS',
-      score: 6.089362584594397,
-    },
-  ],
-  remainingAnswers: 12478,
-}
 
 export interface SuggestionResult {
   suggestions: SuggestionItem[]
@@ -215,14 +188,14 @@ export class WordleSolverService {
         // Store reject function so we can forcibly reject on cancel
         this.requestRejects.set(requestId, reject)
 
-        // Return hardcoded initial suggestions if gameState is empty
+        // Return precomputed initial suggestions if gameState is empty
         if (gameState.history.length === 0) {
-          logger.info('Returning hardcoded initial suggestions', {
+          logger.info('Returning precomputed initial suggestions', {
             requestId,
           })
           this.requestRejects.delete(requestId)
           resolve({
-            ...INITIAL_SUGGESTIONS_DATA,
+            ...initialSuggestionsData,
             requestId,
           })
           return

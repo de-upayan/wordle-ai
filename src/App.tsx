@@ -122,15 +122,6 @@ function App() {
         setErrorMessage(null)
       }
 
-      // Shift+Enter: submit selected suggestion
-      if (e.shiftKey && key === 'ENTER') {
-        e.preventDefault()
-        if (selectedSuggestion.length === 5) {
-          handleGuessSubmit(selectedSuggestion)
-        }
-        return
-      }
-
       // Ctrl+Z or Cmd+Z: undo last guess
       if ((e.ctrlKey || e.metaKey) && key === 'Z') {
         e.preventDefault()
@@ -152,11 +143,19 @@ function App() {
         return
       }
 
-      // Enter: submit typed word or suggestion
+      // Enter: accept suggestion and submit
       if (key === 'ENTER') {
         e.preventDefault()
-        const wordToSubmit = isTyping ? typedWord :
-          selectedSuggestion
+        let wordToSubmit = ''
+        if (isTyping && typedWord.length < 5) {
+          // Partial word typed: use suggestion
+          wordToSubmit = selectedSuggestion
+        } else {
+          // Complete word or not typing: use typed or
+          // selected
+          wordToSubmit = isTyping ? typedWord :
+            selectedSuggestion
+        }
         if (wordToSubmit.length === 5) {
           const isValid = handleGuessSubmit(wordToSubmit)
           if (isValid) {

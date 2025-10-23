@@ -56,7 +56,7 @@ export function LetterTile({
       className={`w-10 h-10 sm:w-12 sm:h-12 lg:w-16
         lg:h-16 flex items-center justify-center
         text-3xl sm:text-4xl lg:text-6xl font-black
-        leading-none transition-all uppercase
+        leading-none transition-all uppercase outline-none
         ${borderClass} ${borderColor}
         ${isSuggestion ? suggestionBg : emptyClass || colorClasses[color]}
         ${isSuggestion ? 'text-teal-500 opacity-50' : ''}

@@ -30,7 +30,7 @@ export function InstructionPanel({
     }
 
     if (puzzleState === PuzzleState.SOLVED) {
-      return 'Puzzle solved!'
+      return 'That\'s it! Puzzle solved.'
     }
 
     // Default instruction

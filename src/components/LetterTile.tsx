@@ -55,7 +55,7 @@ export function LetterTile({
       style={!isSuggestion ? colorStyles[color] : {}}
       className={`w-10 h-10 sm:w-12 sm:h-12 lg:w-16
         lg:h-16 flex items-center justify-center
-        text-2xl sm:text-3xl lg:text-5xl font-black
+        text-3xl sm:text-4xl lg:text-6xl font-black
         transition-all uppercase
         ${borderClass} ${borderColor}
         ${isSuggestion ? suggestionBg : emptyClass || colorClasses[color]}

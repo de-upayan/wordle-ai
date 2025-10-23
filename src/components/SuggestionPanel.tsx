@@ -55,8 +55,8 @@ function SuggestionRow({
             key={idx}
             className={`w-6 h-6 sm:w-7 sm:h-7 lg:w-8
               lg:h-8 flex items-center justify-center
-              border-2 font-bold text-sm sm:text-base
-              lg:text-2xl ${
+              border-2 font-bold text-base sm:text-lg
+              lg:text-3xl ${
               isSelected
                 ? isDarkMode
                   ? 'bg-green-800 border-green-700 text-green-100'

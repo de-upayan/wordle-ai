@@ -35,7 +35,24 @@ function SuggestionRow({
         className="py-2 sm:py-2.5 lg:py-3 flex items-center
           justify-between gap-2 sm:gap-2.5 lg:gap-3
           bg-transparent"
-      />
+      >
+        {/* Placeholder word squares */}
+        <div className="flex gap-0.5 sm:gap-0.5 lg:gap-1">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8
+                lg:h-8"
+            />
+          ))}
+        </div>
+
+        {/* Placeholder score */}
+        <span className="text-xs sm:text-sm lg:text-lg
+          font-semibold whitespace-nowrap invisible">
+          0.00
+        </span>
+      </div>
     )
   }
 
